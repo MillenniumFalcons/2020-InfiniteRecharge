@@ -109,12 +109,8 @@ public class Joysticks {
      * @param jValue is the joystick value input
      * @return returns joystick value if outside of joystick threshold, else returns zero
      */
-    public static double joystickThreshold(double jValue) {
-        if (Math.abs(jValue) < .09) {
-            return 0;
-        } else {
-            return 1 * jValue;
-        }
+    public static double joystickThreshold(double value) {
+        return Math.abs(value) < .09 ? 0 : value;
     }
 
     public int getControllerPin() {

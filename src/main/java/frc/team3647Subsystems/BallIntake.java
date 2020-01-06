@@ -25,7 +25,7 @@ public class BallIntake implements Subsystem {
 
     private PeriodicIO periodicIO = new PeriodicIO();
 
-    public BallIntake(int extensionCylinder1Pin, int extensionCylinder2Pin, int intakeMotorPin,
+    BallIntake(int extensionCylinder1Pin, int extensionCylinder2Pin, int intakeMotorPin,
             boolean isInverted) {
         extensionCylinder1 = new Solenoid(extensionCylinder1Pin);
         extensionCylinder2 = new Solenoid(extensionCylinder2Pin);

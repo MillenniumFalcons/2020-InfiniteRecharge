@@ -23,9 +23,9 @@ public abstract class SparkMaxSubsystem implements Subsystem {
     private int m_maxStallCurrent;
     private int m_maxCurrent;
     private boolean isInverted = false;
-    private SubsystemControlType controlType = SubsystemControlType.OPENLOOP;
+    private ControlType controlType = ControlType.kDutyCycle;
 
-    protected SparkMaxSubsystem(int masterCANID, double[] PIDArr, double maxVelocity,
+    protected SparkMaxSubsystem(int masterCANID, double[] PIDArr, double feedForwardArr , double maxVelocity,
             double maxAcceleration, double encoderThreshold, int maxStallCurrent, int maxCurrent,
             boolean inverted) {
         periodicIO = new PeriodicIO();
@@ -39,6 +39,7 @@ public abstract class SparkMaxSubsystem implements Subsystem {
         master = new CANSparkMax(m_masterCANID, CANSparkMaxLowLevel.MotorType.kBrushless);
         encoder = new CANEncoder(master);
         pidController = new CANPIDController(master);
+
     }
 
     @Override
@@ -73,14 +74,18 @@ public abstract class SparkMaxSubsystem implements Subsystem {
 
     @Override
     public void writePeriodicOutputs() {
-        if (SubsystemControlType.SMARTMOTION.equals(controlType)) {
-            pidController.setReference(periodicIO.demand, ControlType.kSmartMotion, 0,
-                    periodicIO.feedforward);
-        } else if(SubsystemControlType.OPENLOOP.equals(controlType)) {
-            master.set(periodicIO.demand);
-        } else {
-            pidController.setReference(periodicIO.demand, ControlType.kVelocity, 0, periodicIO.feedforward);
-        }
+        setSparkMax(controlType, periodicIO.demand, periodicIO.feedforward);
+    }
+    
+    @Override
+    public void end() {
+        setOpenloop(0);
+        periodicIO.feedforward = 0;
+    }
+
+    @Override
+    public void periodic(double timestamp) {
+        periodicIO.timestamp = timestamp;    
     }
 
     public double getEncoderValue() {
@@ -110,23 +115,24 @@ public abstract class SparkMaxSubsystem implements Subsystem {
 
     protected void setPosition(double refrencePt) {
         periodicIO.demand = refrencePt;
-        controlType = SubsystemControlType.SMARTMOTION;
+        controlType = ControlType.kSmartMotion;
     }
 
     protected void setVelocity(double velocity) {
         periodicIO.demand = velocity;
-        controlType = SubsystemControlType.VELOCITY;
+        controlType = ControlType.kSmartMotion;
     }
 
     protected void setOpenloop(double demand) {
         periodicIO.demand = demand;
-        controlType = SubsystemControlType.OPENLOOP;
+        controlType = ControlType.kDutyCycle;
     }
 
     public class PeriodicIO {
         public double encoderValue;
         public double encoderVelocity;
         public boolean hasResetOccured;
+        public double timestamp;
 
         public double demand;
         public double feedforward;
@@ -167,6 +173,16 @@ public abstract class SparkMaxSubsystem implements Subsystem {
             HALMethods.sendDSError(e.toString());
         }
     }
+
+    private void setSparkMax(ControlType controlType, double demand, double feedForward) {
+        pidController.setReference(demand, controlType, 0, feedForward);
+    }
+
+    protected void addFollower(CANSparkMax follower) {
+        follower.follow(master);
+        follower.setInverted(master.getInverted());
+    }
+
 
     public abstract String getName();
 
