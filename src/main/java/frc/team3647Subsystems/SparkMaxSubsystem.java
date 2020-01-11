@@ -7,39 +7,37 @@ import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import edu.wpi.first.wpilibj.SpeedController;
 import lib.drivers.SparkMaxUtil;
 import lib.wpi.HALMethods;
 
-public abstract class SparkMaxSubsystem implements Subsystem {
+public abstract class SparkMaxSubsystem extends SmartMotorControllerSubsystem {
 
-    protected PeriodicIO periodicIO;
     private CANSparkMax master;
     private CANEncoder encoder;
     private CANPIDController pidController;
-    private int m_masterCANID;
-    private double[] m_PIDArr;
-    private double m_maxVelocity, m_maxAcceleration;
-    private double m_encoderThreshold;
-    private int m_maxStallCurrent;
-    private int m_maxCurrent;
-    private boolean isInverted = false;
     private ControlType controlType = ControlType.kDutyCycle;
+    private int m_maxFreeSpeedCurrent;
+    private int m_maxStallCurrent;
 
-    protected SparkMaxSubsystem(int masterCANID, double[] PIDArr, double feedForwardArr , double maxVelocity,
-            double maxAcceleration, double encoderThreshold, int maxStallCurrent, int maxCurrent,
-            boolean inverted) {
-        periodicIO = new PeriodicIO();
-        m_masterCANID = masterCANID;
-        m_PIDArr = PIDArr;
-        m_maxVelocity = maxVelocity;
-        m_maxAcceleration = maxAcceleration;
-        m_maxStallCurrent = maxStallCurrent;
-        m_maxCurrent = maxCurrent;
-        isInverted = inverted;
+    protected SparkMaxSubsystem(int masterCANID, double kEncoderAccelerationToUnits,
+            double kEncoderVelocityToRPM, double kEncoderPositionToUnits, double[] PIDArr,
+            double[] feedForwardArr, double maxVelocity, double maxAcceleration,
+            double positionThreshold, double velocityThreshold, boolean inverted,
+            int maxFreeSpeedCurrent, int maxStallCurrent) {
+        super(masterCANID, kEncoderAccelerationToUnits, kEncoderVelocityToRPM,
+                kEncoderPositionToUnits, PIDArr, feedForwardArr, maxVelocity, maxAcceleration,
+                positionThreshold, velocityThreshold, inverted);
+
         master = new CANSparkMax(m_masterCANID, CANSparkMaxLowLevel.MotorType.kBrushless);
         encoder = new CANEncoder(master);
         pidController = new CANPIDController(master);
 
+        assert m_maxFreeSpeedCurrent != 0;
+        m_maxFreeSpeedCurrent = maxFreeSpeedCurrent;
+
+        assert m_maxStallCurrent != 0;
+        m_maxStallCurrent = maxStallCurrent;
     }
 
     @Override
@@ -51,7 +49,7 @@ public abstract class SparkMaxSubsystem implements Subsystem {
                     "Couldn't set " + getName() + " sparkmax hall sensor to pid feedback");
             configPID(pidController, getName() + " master sparkmax ", m_PIDArr, m_maxVelocity,
                     m_maxAcceleration, 0);
-            SparkMaxUtil.checkError(master.setSmartCurrentLimit(m_maxStallCurrent, m_maxCurrent),
+            SparkMaxUtil.checkError(master.setSmartCurrentLimit(m_maxStallCurrent, m_maxFreeSpeedCurrent),
                     "Couldn't set current limiting to " + getName() + " sparkmax");
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
@@ -76,7 +74,7 @@ public abstract class SparkMaxSubsystem implements Subsystem {
     public void writePeriodicOutputs() {
         setSparkMax(controlType, periodicIO.demand, periodicIO.feedforward);
     }
-    
+
     @Override
     public void end() {
         setOpenloop(0);
@@ -85,57 +83,33 @@ public abstract class SparkMaxSubsystem implements Subsystem {
 
     @Override
     public void periodic(double timestamp) {
-        periodicIO.timestamp = timestamp;    
+        periodicIO.timestamp = timestamp;
     }
 
-    public double getEncoderValue() {
-        return periodicIO.encoderValue;
-    }
-
-    public double getEncoderVelocity() {
-        return periodicIO.encoderVelocity;
-    }
-
-    public void resetEncoder() {
-        periodicIO = new PeriodicIO();
-    }
-
-    protected void setEncoderValue(double newPosition) {
-        SparkMaxUtil.checkError(encoder.setPosition(newPosition),
+    protected void setEncoderPosition(double newPosition) {
+        SparkMaxUtil.checkError(encoder.setPosition(newPosition / kEncoderPositionToUnits),
                 "couldn't change encoder value on " + getName() + "'s' sparkmax");
     }
 
-    public void resetEncoderValue() {
-        setEncoderValue(0);
-    }
-
-    protected enum SubsystemControlType {
-        OPENLOOP, SMARTMOTION, VELOCITY
-    }
-
     protected void setPosition(double refrencePt) {
-        periodicIO.demand = refrencePt;
+        periodicIO.demand = refrencePt / kEncoderPositionToUnits;
         controlType = ControlType.kSmartMotion;
     }
 
     protected void setVelocity(double velocity) {
-        periodicIO.demand = velocity;
+        periodicIO.demand = velocity / kEncoderVelocityToRPM;
         controlType = ControlType.kSmartMotion;
     }
 
-    protected void setOpenloop(double demand) {
+    public void setOpenloop(double demand) {
         periodicIO.demand = demand;
         controlType = ControlType.kDutyCycle;
     }
 
-    public class PeriodicIO {
-        public double encoderValue;
-        public double encoderVelocity;
-        public boolean hasResetOccured;
-        public double timestamp;
-
-        public double demand;
-        public double feedforward;
+    @Override
+    protected void setCurrentLimiting(int maxStallCurrent, int maxFreeSpeedCurrent) {
+        SparkMaxUtil.checkError(master.setSmartCurrentLimit(maxStallCurrent, maxFreeSpeedCurrent),
+                "Couldn't set current limiting to " + getName() + " sparkmax");
     }
 
     private synchronized void configPID(CANPIDController controller, String name, double[] PIDArr,
@@ -150,10 +124,14 @@ public abstract class SparkMaxSubsystem implements Subsystem {
                 "Couldn't set max vel for " + name);
     }
 
+    /**
+     * @param position position to check in real world units
+     */
     protected boolean reachedPosition(double position) {
-        return position < getEncoderValue() + m_encoderThreshold && position > getEncoderValue() - m_encoderThreshold;
+        return position < getPosition() + m_EncoderPositionThreshold * kEncoderPositionToUnits
+                && position > getPosition() - m_EncoderPositionThreshold * kEncoderPositionToUnits;
     }
-    
+
     public void setToCoast() {
         try {
             SparkMaxUtil.checkError(master.setIdleMode(IdleMode.kCoast),
@@ -178,12 +156,12 @@ public abstract class SparkMaxSubsystem implements Subsystem {
         pidController.setReference(demand, controlType, 0, feedForward);
     }
 
-    protected void addFollower(CANSparkMax follower) {
-        follower.follow(master);
-        follower.setInverted(master.getInverted());
+    @Override
+    protected <T> void addFollower(T follower) {
+        if (follower instanceof CANSparkMax) {
+            CANSparkMax cFollower = (CANSparkMax) follower;
+            cFollower.follow(master);
+            cFollower.setInverted(master.getInverted());
+        }
     }
-
-
-    public abstract String getName();
-
 }

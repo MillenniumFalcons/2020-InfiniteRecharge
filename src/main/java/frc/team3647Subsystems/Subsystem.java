@@ -12,4 +12,6 @@ public interface Subsystem {
     public void writePeriodicOutputs();
     
     public void periodic(double timestamp);
+
+    public abstract String getName();
 }

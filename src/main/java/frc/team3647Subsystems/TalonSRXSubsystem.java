@@ -11,6 +11,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
@@ -20,33 +21,30 @@ import lib.wpi.HALMethods;
 /**
  * Add your docs here.
  */
-public abstract class TalonSRXSubsystem implements Subsystem {
+public abstract class TalonSRXSubsystem extends SmartMotorControllerSubsystem {
 
-    protected PeriodicIO periodicIO;
     private TalonSRX master;
-    private int m_masterCANID;
-    private double[] m_PIDArr;
-    private int m_maxVelocity, m_maxAcceleration;
-    private double m_encoderThreshold;
-    private int m_maxStallCurrent;
-    private int m_maxCurrent;
-    private int m_peakCurrentDuration;
-    private boolean isInverted = false;
     private SubsystemControlType controlType = SubsystemControlType.OPENLOOP;
     private SimpleMotorFeedforward feedForwad;
+    private int m_continuousCurrent;
+    private int m_peakCurrentDuration;
+    private int m_peakCurrent;
 
-    protected TalonSRXSubsystem(int masterCANID, double[] PIDArr, double[] feedForwardArr,
-            int maxVelocity, int maxAcceleration, double encoderThreshold, int maxStallCurrent,
-            int maxCurrent, int peakCurrentDuration, boolean inverted) {
-        periodicIO = new PeriodicIO();
-        m_masterCANID = masterCANID;
-        m_PIDArr = PIDArr;
-        m_maxVelocity = maxVelocity;
-        m_maxAcceleration = maxAcceleration;
-        m_maxStallCurrent = maxStallCurrent;
-        m_maxCurrent = maxCurrent;
-        m_peakCurrentDuration = peakCurrentDuration;
-        isInverted = inverted;
+    protected TalonSRXSubsystem(int masterCANID, double kEncoderAccelerationToUnits,
+            double kEncoderVelocityToRPM, double kEncoderPositionToUnits, double[] PIDArr,
+            double[] feedForwardArr, double maxVelocity, double maxAcceleration,
+            double positionThreshold, double velocityThreshold, boolean inverted, int peakCurrent,
+            int continuousCurrent, int peakCurrentDuration) {
+        super(masterCANID, kEncoderAccelerationToUnits, kEncoderVelocityToRPM,
+                kEncoderPositionToUnits, PIDArr, feedForwardArr, maxVelocity, maxAcceleration,
+                positionThreshold, velocityThreshold, inverted);
+
+        assert continuousCurrent != 0;
+        m_continuousCurrent = continuousCurrent;
+
+        assert peakCurrent != 0;
+        m_peakCurrent = peakCurrent;
+
         master = new TalonSRX(m_masterCANID);
         feedForwad =
                 new SimpleMotorFeedforward(feedForwardArr[0], feedForwardArr[1], feedForwardArr[2]);
@@ -59,11 +57,11 @@ public abstract class TalonSRXSubsystem implements Subsystem {
             master.setInverted(isInverted);
             setToBrake();
             master.enableCurrentLimit(true);
-            TalonSRXUtil.checkError(master.configContinuousCurrentLimit(m_maxStallCurrent),
+            TalonSRXUtil.checkError(master.configContinuousCurrentLimit(m_continuousCurrent),
                     "Couldn't set current limiting to " + getName() + " talonSRX");
             TalonSRXUtil.checkError(master.configPeakCurrentDuration(m_peakCurrentDuration),
                     "Couldn't set current limiting to " + getName() + " talonSRX");
-            TalonSRXUtil.checkError(master.configPeakCurrentLimit(m_maxCurrent),
+            TalonSRXUtil.checkError(master.configPeakCurrentLimit(m_peakCurrent),
                     "Couldn't set current limiting to " + getName() + " talonSRX");
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
@@ -99,26 +97,11 @@ public abstract class TalonSRXSubsystem implements Subsystem {
         periodicIO.timestamp = timestamp;
     }
 
-    public double getEncoderValue() {
-        return periodicIO.encoderValue;
-    }
-
-    public double getEncoderVelocity() {
-        return periodicIO.encoderVelocity;
-    }
-
-    public void resetEncoder() {
-        periodicIO = new PeriodicIO();
-    }
-
-    protected void setEncoderValue(int newPosition) {
-        TalonSRXUtil.checkError(master.setSelectedSensorPosition(newPosition),
+    protected void setEncoderPosition(double newPosition) {
+        TalonSRXUtil.checkError(master.setSelectedSensorPosition((int)newPosition),
                 "couldn't change encoder value on " + getName() + "'s' sparkmax");
     }
 
-    public void resetEncoderValue() {
-        setEncoderValue(0);
-    }
 
     protected enum SubsystemControlType {
         OPENLOOP(ControlMode.PercentOutput), MOTIONMAGIC(ControlMode.MotionMagic), POSITION(
@@ -132,18 +115,18 @@ public abstract class TalonSRXSubsystem implements Subsystem {
     }
 
     protected void setPosition(double refrencePt) {
-        periodicIO.demand = refrencePt;
+        periodicIO.demand = refrencePt * kEncoderPositionToUnits;
         periodicIO.feedforward = feedForwad.calculate(m_maxVelocity, m_maxAcceleration);
         controlType = SubsystemControlType.MOTIONMAGIC;
     }
 
     protected void setVelocity(double velocity) {
-        periodicIO.demand = velocity;
+        periodicIO.demand = velocity / kEncoderVelocityToRPM;
         periodicIO.feedforward = feedForwad.calculate(velocity, m_maxAcceleration);
         controlType = SubsystemControlType.VELOCITY;
     }
 
-    protected void setOpenloop(double demand) {
+    public void setOpenloop(double demand) {
         periodicIO.demand = demand;
         periodicIO.feedforward = 0;
         controlType = SubsystemControlType.OPENLOOP;
@@ -160,21 +143,21 @@ public abstract class TalonSRXSubsystem implements Subsystem {
     }
 
     private synchronized void configPID(TalonSRX master, String name, double[] PIDArr,
-            int maxVelocity, int maxAcceleration, int slot) {
+            double maxVelocity, double maxAcceleration, int slot) {
         TalonSRXUtil.checkError(master.config_kP(slot, PIDArr[0]), "Couldn't set P for " + name);
         TalonSRXUtil.checkError(master.config_kI(slot, PIDArr[1]), "Couldn't set I for " + name);
         TalonSRXUtil.checkError(master.config_kD(slot, PIDArr[2]), "Couldn't set D for " + name);
         TalonSRXUtil.checkError(master.config_kF(slot, PIDArr[3]), "Couldn't set F for " + name);
 
-        TalonSRXUtil.checkError(master.configMotionAcceleration(maxAcceleration),
+        TalonSRXUtil.checkError(master.configMotionAcceleration((int) maxAcceleration),
                 "Couldn't set max accel for " + name);
-        TalonSRXUtil.checkError(master.configMotionCruiseVelocity(maxVelocity),
+        TalonSRXUtil.checkError(master.configMotionCruiseVelocity((int) maxVelocity),
                 "Couldn't set max vel for " + name);
     }
 
     protected boolean reachedPosition(double position) {
-        return position < getEncoderValue() + m_encoderThreshold
-                && position > getEncoderValue() - m_encoderThreshold;
+        return position < getPosition() + m_EncoderPositionThreshold * kEncoderPositionToUnits
+                && position > getPosition() - m_EncoderPositionThreshold * kEncoderPositionToUnits;
     }
 
     public void setToCoast() {
@@ -197,15 +180,12 @@ public abstract class TalonSRXSubsystem implements Subsystem {
         }
     }
 
-    protected void addFollower(TalonSRX talonFollower) {
-        talonFollower.follow(master);
-        talonFollower.setInverted(InvertType.FollowMaster);
+    @Override
+    protected <T> void addFollower(T follower) {
+        if (follower instanceof BaseMotorController) {
+            BaseMotorController cFollower = (BaseMotorController) follower;
+            cFollower.follow(master);
+            cFollower.setInverted(InvertType.FollowMaster);
+        }
     }
-
-    protected void addFollower(VictorSPX victorFollower) {
-        victorFollower.follow(master);
-        victorFollower.setInverted(InvertType.FollowMaster);
-    }
-
-    public abstract String getName();
 }

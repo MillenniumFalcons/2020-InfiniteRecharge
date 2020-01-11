@@ -9,10 +9,12 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import lib.DriveSignal;
 import lib.drivers.SparkMaxUtil;
+import lib.wpi.Timer;
 
 
 public class Drivetrain implements Subsystem {
 
+    private static final double kDt = .02;
     private CANSparkMax leftMaster;
     private CANSparkMax rightMaster;
     private CANSparkMax leftSlave;
@@ -41,9 +43,14 @@ public class Drivetrain implements Subsystem {
 
     private double m_timeStamp;
 
+    private double kEncoderValueToMeters;
+    private double kEncoderVelocityToMetersPerSecond;
+
     Drivetrain(int leftMasterPin, int rightMasterPin, int leftSlavePin, int rightSlavePin,
-            double[] leftVelocityPIDArr, double[] rightVelocityPIDArr, double[] leftFeedForwardConstants, double[] rightFeedForwardConstants ,int maxCurrent,
-            int maxStallCurrent) {
+            double[] leftVelocityPIDArr, double[] rightVelocityPIDArr,
+            double[] leftFeedForwardConstants, double[] rightFeedForwardConstants, int maxCurrent,
+            int maxStallCurrent, double kEncoderValueToMeters,
+            double kEncoderVelocityToMetersPerSecond) {
         leftMaster = new CANSparkMax(leftMasterPin, CANSparkMaxLowLevel.MotorType.kBrushless);
         rightMaster = new CANSparkMax(rightMasterPin, CANSparkMaxLowLevel.MotorType.kBrushless);
         leftSlave = new CANSparkMax(leftSlavePin, CANSparkMaxLowLevel.MotorType.kBrushless);
@@ -63,23 +70,48 @@ public class Drivetrain implements Subsystem {
 
         feedForwardCalculator = new SimpleMotorFeedforward(kS, kV, kA);
 
+        this.kEncoderValueToMeters = kEncoderValueToMeters;
+        this.kEncoderVelocityToMetersPerSecond = kEncoderVelocityToMetersPerSecond;
+
         controlType = DrivetrainControlType.OPENLOOP;
 
         initialized = false;
     }
 
     public static class PeriodicIO {
+        // inputs
         public double leftEncoderVelocity;
         public double rightEncoderVelocity;
+
         public double leftEncoderValue;
         public double rightEncoderValue;
         public double heading;
 
+        public double leftAcceleration;
+        public double rightAcceleration;
+
+        // outputs
         public double leftOutput;
         public double rightOutput;
 
+        /**
+         * in volts
+         */
         public double leftFeedForward;
+        /**
+         * in volts
+         */
         public double rightFeedForward;
+
+        /**
+         * in meters per second
+         */
+        public double prevDesiredThrottle;
+
+        /**
+         * in meters per second
+         */
+        public double prevDesiredTurn;
     }
 
     @Override
@@ -133,8 +165,8 @@ public class Drivetrain implements Subsystem {
                             + periodicIO.rightOutput);
 
         } else {
-            leftMaster.set(periodicIO.leftOutput);
-            rightMaster.set(periodicIO.rightOutput);
+            leftMaster.setVoltage(periodicIO.leftOutput);
+            rightMaster.setVoltage(periodicIO.rightOutput);
         }
     }
 
@@ -157,11 +189,21 @@ public class Drivetrain implements Subsystem {
     }
 
     public synchronized void arcadeDrive(double throttle, double turn, boolean scaleInputs) {
-        throttle = limit(throttle);
-        turn = limit(turn);
+        throttle = limit(throttle) * 3.0; // map -1 to 1 to m/s
+        turn = limit(turn) * 3.0; // map -1 to 1 to m/s
+
+        double tempThrottle = throttle;
+        double tempTurn = turn;
+
+        throttle = feedForwardCalculator.calculate(throttle,
+                (throttle - periodicIO.prevDesiredThrottle) / kDt);
+        turn = feedForwardCalculator.calculate(turn, (turn - periodicIO.prevDesiredTurn) / kDt);
+
+        periodicIO.prevDesiredThrottle = tempThrottle;
+        periodicIO.prevDesiredTurn = tempTurn;
+
         double leftMotorOutput;
         double rightMotorOutput;
-
         double maxInput = Math.copySign(Math.max(Math.abs(throttle), Math.abs(turn)), throttle);
 
         if (throttle >= 0.0) {
@@ -188,6 +230,7 @@ public class Drivetrain implements Subsystem {
             leftMotorOutput = limit(leftMotorOutput) * .6;
             rightMotorOutput = limit(rightMotorOutput) * .6;
         }
+
         setOpenLoop(new DriveSignal(leftMotorOutput, rightMotorOutput));
     }
 
@@ -197,9 +240,20 @@ public class Drivetrain implements Subsystem {
         controlType = DrivetrainControlType.OPENLOOP;
     }
 
+    /**
+     * @param driveSignal in meters per second
+     */
     public synchronized void setVelocity(DriveSignal driveSignal) {
-        periodicIO.leftOutput = driveSignal.getLeft();
-        periodicIO.rightOutput = driveSignal.getRight();
+        periodicIO.leftOutput = driveSignal.getLeft() / kEncoderVelocityToMetersPerSecond;
+        periodicIO.leftFeedForward = feedForwardCalculator.calculate(periodicIO.leftOutput,
+                (periodicIO.leftOutput - getLeftVelocity() / kDt));
+
+
+        periodicIO.rightOutput = driveSignal.getRight() / kEncoderVelocityToMetersPerSecond;
+        periodicIO.leftFeedForward = feedForwardCalculator.calculate(periodicIO.rightOutput,
+                (periodicIO.rightOutput - getRightVelocity()) / kDt);
+
+
         controlType = DrivetrainControlType.VELOCITY;
     }
 
@@ -259,23 +313,35 @@ public class Drivetrain implements Subsystem {
                 m_timeStamp + " Couldn't set D for " + name);
     }
 
-    public double getLeftEncoderValue() {
-        return periodicIO.leftEncoderValue;
+    /**
+     * @return left position in meters
+     */
+    public double getLeftEncoderPosition() {
+        return periodicIO.leftEncoderValue * kEncoderValueToMeters;
     }
 
+
+    /**
+     * @return right encoder position in meters
+     */
     public double getRightEncoderValue() {
-        return periodicIO.rightEncoderValue;
+        return periodicIO.rightEncoderValue * kEncoderValueToMeters;
     }
 
-    public double getLeftEncoderVelocity() {
-        return periodicIO.leftEncoderVelocity;
+    public double getLeftVelocity() {
+        return periodicIO.leftEncoderVelocity * kEncoderVelocityToMetersPerSecond;
     }
 
-    public double getRightEncoderVelocity() {
-        return periodicIO.rightEncoderVelocity;
+    public double getRightVelocity() {
+        return periodicIO.rightEncoderVelocity * kEncoderVelocityToMetersPerSecond;
     }
 
     public boolean hasInitialized() {
         return initialized;
+    }
+
+    @Override
+    public String getName() {
+        return "Drivetrain";
     }
 }

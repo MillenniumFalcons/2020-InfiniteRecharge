@@ -22,6 +22,7 @@ public class BallIntake implements Subsystem {
 
     private boolean m_isInverted;
     private double m_timeStamp;
+    private static BallShooter INSTANCE;
 
     private PeriodicIO periodicIO = new PeriodicIO();
 
@@ -83,5 +84,10 @@ public class BallIntake implements Subsystem {
 
     public void stop() {
         setOpenLoop(0);
+    }
+
+    @Override
+    public String getName() {
+        return "BallIntake";
     }
 }

@@ -7,18 +7,12 @@
 
 package frc.team3647Subsystems;
 
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-
 /**
  * Add your docs here.
  */
-public class BallShooter extends SparkMaxSubsystem {
+public class BallAccelerator extends SparkMaxSubsystem {
 
-    private static BallShooter INSTANCE;
-    private CANSparkMax shooterFollower;
-
-    BallShooter(int masterCANID, int followerCANID, double kEncoderAccelerationToUnits,
+    BallAccelerator(int masterCANID, double kEncoderAccelerationToUnits,
             double kEncoderVelocityToRPM, double kEncoderPositionToUnits, double[] PIDArr,
             double[] feedForwardArr, double maxVelocity, double maxAcceleration,
             double positionThreshold, double velocityThreshold, boolean inverted,
@@ -27,13 +21,6 @@ public class BallShooter extends SparkMaxSubsystem {
                 kEncoderPositionToUnits, PIDArr, feedForwardArr, maxVelocity, maxAcceleration,
                 positionThreshold, velocityThreshold, inverted, maxFreeSpeedCurrent,
                 maxStallCurrent);
-        shooterFollower = new CANSparkMax(followerCANID, MotorType.kBrushless);
-    }
-
-    @Override
-    public void init() {
-        super.init();
-        addFollower(shooterFollower);
     }
 
     public void setRPM(double RPM) {
@@ -42,6 +29,6 @@ public class BallShooter extends SparkMaxSubsystem {
 
     @Override
     public String getName() {
-        return "BallShooter";
+        return "Ball Accelerator";
     }
 }
