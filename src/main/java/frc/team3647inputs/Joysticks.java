@@ -8,6 +8,7 @@
 package frc.team3647inputs;
 
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 
 /**
  * Add your docs here.
@@ -17,7 +18,7 @@ public class Joysticks {
      * Main controller Variable
      */
     public double leftTrigger, rightTrigger, leftJoyStickY, leftJoyStickX, rightJoyStickY,
-            rightJoyStickX;
+            rightJoyStickX, rumbleIntensity;
     public boolean rightBumper, leftBumper, buttonA, buttonB, buttonY, buttonX, dPadDown, dPadLeft,
             dPadRight, dPadUp;
     public boolean rightJoyStickPress, leftJoyStickPress, leftMidButton, rightMidButton,
@@ -64,6 +65,9 @@ public class Joysticks {
 
         leftMidButton = controller.getBackButton();
         rightMidButton = controller.getStartButton();
+
+        controller.setRumble(RumbleType.kLeftRumble, rumbleIntensity);
+        controller.setRumble(RumbleType.kRightRumble, rumbleIntensity);
 
         setDPadValues(controller.getPOV());
     }
@@ -116,5 +120,6 @@ public class Joysticks {
     public int getControllerPin() {
         return controllerPin;
     }
+
 }
 
