@@ -8,7 +8,7 @@
 package frc.team3647inputs;
 
 /**
- * Add your docs here.
+ * Camera Class to get "working distance" or "projected distance" using the following constants and variables
  */
 public class PS3EyeCamera 
 {
