@@ -9,7 +9,6 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import lib.DriveSignal;
 import lib.drivers.SparkMaxUtil;
-import lib.wpi.Timer;
 
 
 public class Drivetrain implements Subsystem {
