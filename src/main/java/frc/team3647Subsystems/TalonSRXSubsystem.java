@@ -9,80 +9,73 @@ package frc.team3647Subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.DemandType;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lib.drivers.TalonSRXUtil;
+import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
+import lib.drivers.ClosedLoopFactory;
+import lib.drivers.TalonSRXFactory;
 import lib.wpi.HALMethods;
 
 /**
  * Add your docs here.
  */
-public abstract class TalonSRXSubsystem extends SmartMotorControllerSubsystem {
+public abstract class TalonSRXSubsystem extends SubsystemBase implements PeriodicSubsystem {
 
     private TalonSRX master;
-    private SubsystemControlType controlType = SubsystemControlType.OPENLOOP;
+    private ControlMode controlMode = ControlMode.Disabled;
     private SimpleMotorFeedforward feedForwad;
-    private int m_continuousCurrent;
-    private int m_peakCurrentDuration;
-    private int m_peakCurrent;
+    private TalonSRXFactory.Configuration m_masterConfig;
+    private ClosedLoopConfig m_pidConfig;
 
-    protected TalonSRXSubsystem(int masterCANID, double kEncoderAccelerationToUnits,
-            double kEncoderVelocityToRPM, double kEncoderPositionToUnits, double[] PIDArr,
-            double[] feedForwardArr, double maxVelocity, double maxAcceleration,
-            double positionThreshold, double velocityThreshold, boolean inverted, int peakCurrent,
-            int continuousCurrent, int peakCurrentDuration) {
-        super(masterCANID, kEncoderAccelerationToUnits, kEncoderVelocityToRPM,
-                kEncoderPositionToUnits, PIDArr, feedForwardArr, maxVelocity, maxAcceleration,
-                positionThreshold, velocityThreshold, inverted);
+    public static class PeriodicIO {
+        // inputs
+        public double position;
+        public double velocity;
 
-        assert continuousCurrent != 0;
-        m_continuousCurrent = continuousCurrent;
+        // outputs
+        public double feedforward;
+        public double demand;
+    }
 
-        assert peakCurrent != 0;
-        m_peakCurrent = peakCurrent;
+    private PeriodicIO periodicIO = new PeriodicIO();
 
-        master = new TalonSRX(m_masterCANID);
-        feedForwad =
-                new SimpleMotorFeedforward(feedForwardArr[0], feedForwardArr[1], feedForwardArr[2]);
-
+    protected TalonSRXSubsystem(TalonSRXFactory.Configuration masterConfig,
+            ClosedLoopConfig pidConfig) {
+        m_masterConfig = masterConfig;
+        m_pidConfig = pidConfig;
+        master = TalonSRXFactory.createTalon(m_masterConfig);
+        ClosedLoopFactory.configTalonPIDController(master, FeedbackDevice.CTRE_MagEncoder_Relative,
+                pidConfig, 0);
     }
 
     @Override
     public void init() {
         try {
-            master.setInverted(isInverted);
             setToBrake();
-            master.enableCurrentLimit(true);
-            TalonSRXUtil.checkError(master.configContinuousCurrentLimit(m_continuousCurrent),
-                    "Couldn't set current limiting to " + getName() + " talonSRX");
-            TalonSRXUtil.checkError(master.configPeakCurrentDuration(m_peakCurrentDuration),
-                    "Couldn't set current limiting to " + getName() + " talonSRX");
-            TalonSRXUtil.checkError(master.configPeakCurrentLimit(m_peakCurrent),
-                    "Couldn't set current limiting to " + getName() + " talonSRX");
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
-            master = new TalonSRX(m_masterCANID);
-            master.setInverted(isInverted);
-            setToBrake();
-
-            configPID(master, getName() + " master talonSRX ", m_PIDArr, m_maxVelocity,
-                    m_maxAcceleration, 0);
+            master = TalonSRXFactory.createTalon(m_masterConfig);
+            ClosedLoopFactory.configTalonPIDController(master,
+                    FeedbackDevice.CTRE_MagEncoder_Relative, m_pidConfig, 0);
         }
     }
 
     @Override
     public void readPeriodicInputs() {
-        periodicIO.encoderValue = master.getSelectedSensorPosition();
-        periodicIO.encoderVelocity = master.getSelectedSensorVelocity();
+        periodicIO.position = master.getSelectedSensorPosition();
+        periodicIO.velocity = master.getSelectedSensorVelocity();
     }
 
     @Override
     public void writePeriodicOutputs() {
-        master.set(controlType.controlMode, periodicIO.demand, DemandType.ArbitraryFeedForward,
-                periodicIO.feedforward);
+        master.set(controlMode, periodicIO.demand, DemandType.ArbitraryFeedForward,
+                periodicIO.feedforward / 12.0);
     }
 
     @Override
@@ -92,78 +85,76 @@ public abstract class TalonSRXSubsystem extends SmartMotorControllerSubsystem {
     }
 
     @Override
-    public void periodic(double timestamp) {
-        periodicIO.timestamp = timestamp;
+    public void periodic() {
+
     }
 
+    /**
+     * @param newPosition set the encoder the this position, physical position will not change
+     */
     protected void setEncoderPosition(double newPosition) {
-        TalonSRXUtil.checkError(master.setSelectedSensorPosition((int)newPosition),
+        TalonSRXUtil.checkError(master.setSelectedSensorPosition((int) newPosition),
                 "couldn't change encoder value on " + getName() + "'s' sparkmax");
     }
 
-
-    protected enum SubsystemControlType {
-        OPENLOOP(ControlMode.PercentOutput), MOTIONMAGIC(ControlMode.MotionMagic), POSITION(
-                ControlMode.Position), VELOCITY(ControlMode.Velocity);
-
-        public ControlMode controlMode;
-
-        SubsystemControlType(ControlMode controlMode) {
-            this.controlMode = controlMode;
-        }
+    /**
+     * change the physical position of the subsystem based on units. Will physically change where
+     * the subsystem is.
+     * 
+     * @param referencePt in real world units.
+     */
+    protected void setPosition(double referencePt) {
+        periodicIO.demand = referencePt / m_pidConfig.kEncoderTicksToUnits;
+        controlMode = ControlMode.Position;
     }
 
-    protected void setPosition(double refrencePt) {
-        periodicIO.demand = refrencePt * kEncoderPositionToUnits;
-        periodicIO.feedforward = feedForwad.calculate(m_maxVelocity, m_maxAcceleration);
-        controlType = SubsystemControlType.MOTIONMAGIC;
+    /**
+     * Will physically change where the subsystem is.
+     * 
+     * @param referencePt the reference pt in units as determined by scaler passed in the
+     *                    constructor
+     */
+    protected void setPositionMotionMagic(double referencePt) {
+        periodicIO.demand = referencePt / m_pidConfig.kEncoderTicksToUnits;
+        controlMode = ControlMode.MotionMagic;
     }
 
+    /**
+     * @param velocity the velocity in RPM of the end effector
+     */
     protected void setVelocity(double velocity) {
-        periodicIO.demand = velocity / kEncoderVelocityToRPM;
-        periodicIO.feedforward = feedForwad.calculate(velocity, m_maxAcceleration);
-        controlType = SubsystemControlType.VELOCITY;
+        periodicIO.demand = velocity / m_pidConfig.kEncoderVelocityToRPM;
+        double acceleration = (velocity - getVelocity()) / .02;
+        periodicIO.feedforward = (feedForwad.calculate(velocity, acceleration) / 12.0)
+                * (1023 / m_pidConfig.maxVelocity);
+        controlMode = ControlMode.Velocity;
     }
 
     public void setOpenloop(double demand) {
         periodicIO.demand = demand;
         periodicIO.feedforward = 0;
-        controlType = SubsystemControlType.OPENLOOP;
+        controlMode = ControlMode.PercentOutput;
     }
 
-    public class PeriodicIO {
-        public int encoderValue;
-        public int encoderVelocity;
-        public boolean hasResetOccured;
-        public double timestamp;
-
-        public double demand;
-        public double feedforward;
-    }
-
-    private synchronized void configPID(TalonSRX master, String name, double[] PIDArr,
-            double maxVelocity, double maxAcceleration, int slot) {
-        TalonSRXUtil.checkError(master.config_kP(slot, PIDArr[0]), "Couldn't set P for " + name);
-        TalonSRXUtil.checkError(master.config_kI(slot, PIDArr[1]), "Couldn't set I for " + name);
-        TalonSRXUtil.checkError(master.config_kD(slot, PIDArr[2]), "Couldn't set D for " + name);
-        TalonSRXUtil.checkError(master.config_kF(slot, PIDArr[3]), "Couldn't set F for " + name);
-
-        TalonSRXUtil.checkError(master.configMotionAcceleration((int) maxAcceleration),
-                "Couldn't set max accel for " + name);
-        TalonSRXUtil.checkError(master.configMotionCruiseVelocity((int) maxVelocity),
-                "Couldn't set max vel for " + name);
-    }
 
     protected boolean reachedPosition(double position) {
-        return position < getPosition() + m_EncoderPositionThreshold * kEncoderPositionToUnits
-                && position > getPosition() - m_EncoderPositionThreshold * kEncoderPositionToUnits;
+        return position < getPosition() + m_pidConfig.positionThreshold
+                && position > getPosition() - m_pidConfig.positionThreshold;
+    }
+
+    public double getPosition() {
+        return periodicIO.position;
+    }
+
+    public double getVelocity() {
+        return periodicIO.velocity;
     }
 
     public void setToCoast() {
         try {
             master.setNeutralMode(NeutralMode.Coast);
         } catch (NullPointerException e) {
-            master = new TalonSRX(m_masterCANID);
+            master = TalonSRXFactory.createTalon(m_masterConfig);
             HALMethods.sendDSError(e.toString());
             master.setNeutralMode(NeutralMode.Coast);
         }
@@ -173,13 +164,13 @@ public abstract class TalonSRXSubsystem extends SmartMotorControllerSubsystem {
         try {
             master.setNeutralMode(NeutralMode.Brake);
         } catch (NullPointerException e) {
-            master = new TalonSRX(m_masterCANID);
             HALMethods.sendDSError(e.toString());
-            master.setNeutralMode(NeutralMode.Brake);
+            master = TalonSRXFactory.createTalon(m_masterConfig);
+            ClosedLoopFactory.configTalonPIDController(master,
+                    FeedbackDevice.CTRE_MagEncoder_Relative, m_pidConfig, 0);
         }
     }
 
-    @Override
     protected <T> void addFollower(T follower) {
         if (follower instanceof BaseMotorController) {
             BaseMotorController cFollower = (BaseMotorController) follower;
