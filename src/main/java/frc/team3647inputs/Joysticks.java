@@ -8,113 +8,111 @@
 package frc.team3647inputs;
 
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.POVButton;
+import lib.wpi.JoystickTrigger;
 
 /**
  * Add your docs here.
  */
 public class Joysticks {
-    /**
-     * Main controller Variable
-     */
-    public double leftTrigger, rightTrigger, leftJoyStickY, leftJoyStickX, rightJoyStickY,
-            rightJoyStickX, rumbleIntensity;
-    public boolean rightBumper, leftBumper, buttonA, buttonB, buttonY, buttonX, dPadDown, dPadLeft,
-            dPadRight, dPadUp;
-    public boolean rightJoyStickPress, leftJoyStickPress, leftMidButton, rightMidButton,
-            buttonXPressed;
+    public final JoystickTrigger leftTrigger;
+    public final JoystickTrigger rightTrigger;
+
+    public final JoystickButton rightJoyStickPress;
+    public final JoystickButton leftJoyStickPress;
+    public final JoystickButton leftMidButton;
+    public final JoystickButton rightMidButton;
+
+    public final JoystickButton rightBumper;
+    public final JoystickButton leftBumper;
+    public final JoystickButton buttonA;
+    public final JoystickButton buttonB;
+    public final JoystickButton buttonY;
+    public final JoystickButton buttonX;
+    public final POVButton dPadDown;
+    public final POVButton dPadLeft;
+    public final POVButton dPadRight;
+    public final POVButton dPadUp;
 
     /**
-     * XboxController Object for Main-Driver Controller; contains all Xbox Controller Functions
+     * XboxController Object for Controller; contains all Xbox Controller Functions
      */
-    private XboxController controller;
+    private final XboxController controller;
 
-    private int controllerPin;
+    private final int controllerPin;
 
-    /**
-     * Co-Driver Controller Variable
-     */
-    private int dPadValue = -1; // dPad degree value
 
     public Joysticks(int controllerPin) {
         controller = new XboxController(controllerPin);
         this.controllerPin = controllerPin;
+
+        leftTrigger = new JoystickTrigger(controller, XboxController.Axis.kLeftTrigger.value, .15);
+        rightTrigger =
+                new JoystickTrigger(controller, XboxController.Axis.kRightTrigger.value, .15);
+
+        rightJoyStickPress = new JoystickButton(controller, XboxController.Hand.kRight.value);
+        leftJoyStickPress = new JoystickButton(controller, XboxController.Hand.kLeft.value);
+        leftMidButton = new JoystickButton(controller, XboxController.Button.kBack.value);
+        rightMidButton = new JoystickButton(controller, XboxController.Button.kStart.value);
+
+        rightBumper = new JoystickButton(controller, XboxController.Button.kBumperRight.value);
+        leftBumper = new JoystickButton(controller, XboxController.Button.kBumperLeft.value);
+        buttonA = new JoystickButton(controller, XboxController.Button.kA.value);
+        buttonB = new JoystickButton(controller, XboxController.Button.kB.value);
+        buttonY = new JoystickButton(controller, XboxController.Button.kY.value);
+        buttonX = new JoystickButton(controller, XboxController.Button.kX.value);
+
+        dPadDown = new POVButton(controller, 180);
+        dPadLeft = new POVButton(controller, 270);
+        dPadRight = new POVButton(controller, 90);
+        dPadUp = new POVButton(controller, 0);
+    }
+
+    public double getLeftStickX() {
+        return applyDeadband(controller.getRawAxis(XboxController.Axis.kLeftX.value));
+    }
+
+    public double getLeftStickY() {
+        return applyDeadband(-controller.getRawAxis(XboxController.Axis.kLeftY.value));
+    }
+
+    public double getRightStickX() {
+        return applyDeadband(controller.getRawAxis(XboxController.Axis.kRightX.value));
+    }
+
+    public double getRightStickY() {
+        return applyDeadband(-controller.getRawAxis(XboxController.Axis.kRightX.value));
     }
 
     /**
-     * update main controller values, must be run to use public variables as triggers
+     * Returns 0.0 if the given value is within the specified range around zero. The remaining range
+     * between the deadband and 1.0 is scaled from 0.0 to 1.0.
+     *
+     * @param value    value to clip
+     * @param deadband range around zero
      */
-    public void update() {
-        leftBumper = controller.getBumper(XboxController.Hand.kLeft);
-        rightBumper = controller.getBumper(XboxController.Hand.kRight);
-        leftTrigger = joystickThreshold(controller.getTriggerAxis(XboxController.Hand.kLeft));
-        rightTrigger = joystickThreshold(controller.getTriggerAxis(XboxController.Hand.kRight));
-        buttonA = controller.getAButton();
-        buttonB = controller.getBButton();
-        buttonX = controller.getXButton();
-        buttonXPressed = controller.getXButtonPressed();
-        buttonY = controller.getYButton();
-
-        leftJoyStickX = joystickThreshold(controller.getX(XboxController.Hand.kLeft));
-        leftJoyStickY = joystickThreshold(-controller.getY(XboxController.Hand.kLeft));
-        rightJoyStickX = joystickThreshold(controller.getX(XboxController.Hand.kRight));
-        rightJoyStickY = joystickThreshold(-controller.getY(XboxController.Hand.kRight));
-
-        rightJoyStickPress = controller.getStickButton(XboxController.Hand.kRight);
-        leftJoyStickPress = controller.getStickButton(XboxController.Hand.kLeft);
-
-        leftMidButton = controller.getBackButton();
-        rightMidButton = controller.getStartButton();
-
-        controller.setRumble(RumbleType.kLeftRumble, rumbleIntensity);
-        controller.setRumble(RumbleType.kRightRumble, rumbleIntensity);
-
-        setDPadValues(controller.getPOV());
-    }
-
-    /**
-     * Set co driver dPad values. 0 degrees = top, 180 = down, 90 right 270 == left
-     */
-    private void setDPadValues(int povValue) {
-        if (dPadValue == 0) {
-            dPadUp = true;
-            dPadDown = false;
-            dPadLeft = false;
-            dPadRight = false;
-        }
-        if (dPadValue == 180) {
-            dPadUp = false;
-            dPadDown = true;
-            dPadLeft = false;
-            dPadRight = false;
-        }
-        if (dPadValue == 90) {
-            dPadUp = false;
-            dPadDown = false;
-            dPadLeft = false;
-            dPadRight = true;
-        }
-        if (dPadValue == 270) {
-            dPadUp = false;
-            dPadDown = false;
-            dPadLeft = true;
-            dPadRight = false;
-        }
-        if (dPadValue == -1) {
-            dPadUp = false;
-            dPadDown = false;
-            dPadLeft = false;
-            dPadRight = false;
+    private double applyDeadband(double value, double deadband) {
+        if (Math.abs(value) > deadband) {
+            if (value > 0.0) {
+                return (value - deadband) / (1.0 - deadband);
+            } else {
+                return (value + deadband) / (1.0 - deadband);
+            }
+        } else {
+            return 0.0;
         }
     }
 
     /**
-     * 
-     * @param jValue is the joystick value input
-     * @return returns joystick value if outside of joystick threshold, else returns zero
+     * Returns 0.0 if the given value is within the specified range around zero. The remaining range
+     * between the deadband and 1.0 is scaled from 0.0 to 1.0.
+     *
+     * @param value    value to clip
+     * @param deadband range around zero
      */
-    public static double joystickThreshold(double value) {
-        return Math.abs(value) < .09 ? 0 : value;
+    private double applyDeadband(double value) {
+        return applyDeadband(value, 0.09);
     }
 
     public int getControllerPin() {

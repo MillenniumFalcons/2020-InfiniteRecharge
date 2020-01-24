@@ -11,7 +11,6 @@ import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.wpilibj.kinematics.DifferentialDriveWheelSpeeds;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpiutil.math.MathUtil;
 import lib.DriveSignal;
 import lib.drivers.ClosedLoopFactory;
@@ -20,11 +19,12 @@ import lib.drivers.SparkMaxUtil;
 import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 import lib.drivers.SparkMaxFactory.Configuration;
 import lib.wpi.HALMethods;
+import lib.wpi.Solenoid;
 import lib.wpi.Timer;
 
 
 
-public class Drivetrain extends SubsystemBase implements PeriodicSubsystem {
+public class Drivetrain implements PeriodicSubsystem {
 
     private static Drivetrain INSTANCE;
 
@@ -70,10 +70,15 @@ public class Drivetrain extends SubsystemBase implements PeriodicSubsystem {
 
     private PigeonIMU m_gyro;
 
-    Drivetrain(Configuration leftMasterConfig, Configuration rightMasterConfig,
+    private Solenoid leftShifter;
+    private Solenoid rightShifter;
+
+    private boolean shifted;
+
+    public Drivetrain(Configuration leftMasterConfig, Configuration rightMasterConfig,
             Configuration leftSlaveConfig, Configuration rightSlaveConfig,
             ClosedLoopConfig leftMasterPIDConfig, ClosedLoopConfig rightMasterPIDConfig,
-            double kWheelDiameter) {
+            int leftShifterPin, int rightShifterPin, double kWheelDiameterMeters) {
         if (constructCount > 0) {
             throw new UnsupportedOperationException("Drivetrain was already initialized once");
         }
@@ -98,10 +103,11 @@ public class Drivetrain extends SubsystemBase implements PeriodicSubsystem {
                 rightEncoder, m_rightPIDConfig, 0);
 
         kEncoderVelocityToMetersPerSecond =
-                m_leftPIDConfig.kEncoderVelocityToRPM * kWheelDiameter * Math.PI;
+                m_leftPIDConfig.kEncoderVelocityToRPM * kWheelDiameterMeters * Math.PI;
         m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
         INSTANCE = this;
         constructCount++;
+        shifted = false;
     }
 
     public static class PeriodicIO {
@@ -199,6 +205,15 @@ public class Drivetrain extends SubsystemBase implements PeriodicSubsystem {
 
     @Override
     public synchronized void writePeriodicOutputs() {
+        if (shifted && periodicIO.leftOutput != periodicIO.rightOutput) {
+            HALMethods.sendDSError("Left motor outout: " + periodicIO.leftOutput
+                    + " and right output: " + periodicIO.rightOutput + " are not equal!!");
+            HALMethods.sendDSError("Setting drivetrain to stop!!");
+            periodicIO.leftOutput = 0;
+            periodicIO.rightOutput = 0;
+            periodicIO.leftFeedForward = 0;
+            periodicIO.rightFeedForward = 0;
+        }
         try {
             m_leftVelocityPID.setReference(periodicIO.leftOutput, controlType, 0,
                     periodicIO.leftFeedForward);
@@ -224,6 +239,7 @@ public class Drivetrain extends SubsystemBase implements PeriodicSubsystem {
 
     @Override
     public void periodic() {
+        PeriodicSubsystem.super.periodic();
         m_timeStamp = Timer.getFPGATimestamp();
         m_odometry.update(Rotation2d.fromDegrees(getHeading()), periodicIO.leftPosition,
                 periodicIO.rightPosition);
@@ -256,11 +272,17 @@ public class Drivetrain extends SubsystemBase implements PeriodicSubsystem {
         }
     }
 
+    public void setShifters(boolean on) {
+        leftShifter.set(on);
+        rightShifter.set(on);
+        shifted = on;
+    }
+
     /**
      * @param driveSignal in meters per second
      */
     public synchronized void setVelocity(DriveSignal driveSignal) {
-        if (driveSignal != null) {
+        if (driveSignal != null && !shifted) {
             periodicIO.leftFeedForward = feedforward.calculate(driveSignal.getLeft(),
                     (driveSignal.getLeft() - periodicIO.leftVelocity) / .02);
             periodicIO.rightFeedForward = feedforward.calculate(driveSignal.getRight(),
@@ -319,8 +341,12 @@ public class Drivetrain extends SubsystemBase implements PeriodicSubsystem {
         double rightVoltage = feedforward.calculate(currentRightDesiredVelocity,
                 (currentRightDesiredVelocity - periodicIO.prevRightDesiredVelocity) / kDt);
 
-        setOpenLoop(new DriveSignal(leftVoltage / m_leftMasterConfig.nominalVoltage,
-                rightVoltage / m_rightMasterConfig.nominalVoltage));
+        if (shifted) {
+            setOpenLoop(new DriveSignal(xSpeed, xSpeed));
+        } else {
+            setOpenLoop(new DriveSignal(leftVoltage / m_leftMasterConfig.nominalVoltage,
+                    rightVoltage / m_rightMasterConfig.nominalVoltage));
+        }
 
         periodicIO.prevLeftDesiredVelocity = leftMotorOutput * m_leftPIDConfig.maxVelocity;
         periodicIO.prevRightDesiredVelocity = rightMotorOutput * m_rightPIDConfig.maxVelocity;
@@ -430,6 +456,10 @@ public class Drivetrain extends SubsystemBase implements PeriodicSubsystem {
 
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {
         return new DifferentialDriveWheelSpeeds(periodicIO.leftVelocity, periodicIO.rightVelocity);
+    }
+
+    public boolean isShifter() {
+        return shifted;
     }
 
     /**

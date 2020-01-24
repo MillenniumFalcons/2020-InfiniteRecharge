@@ -1,15 +1,30 @@
 package frc.team3647Subsystems;
 
+import edu.wpi.first.wpilibj2.command.Subsystem;
+
 /**
- * basically 254's code 
+ * basically 254's code
  */
-public interface PeriodicSubsystem {
+public interface PeriodicSubsystem extends Subsystem {
 
-    public void init();
-    public void end();
+    default void init() {
+    }
 
-    public void readPeriodicInputs();
-    public void writePeriodicOutputs();
-    
-    public abstract String getName();
+    default void end() {
+    }
+
+    default void readPeriodicInputs() {
+    }
+
+    default void writePeriodicOutputs() {
+    }
+
+    @Override
+    default void periodic() {
+        readPeriodicInputs();
+        writePeriodicOutputs();
+    }
+
+
+    public String getName();
 }

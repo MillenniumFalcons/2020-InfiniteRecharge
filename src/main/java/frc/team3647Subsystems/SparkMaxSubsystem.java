@@ -11,9 +11,8 @@ import lib.drivers.SparkMaxUtil;
 import lib.wpi.HALMethods;
 import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 import lib.drivers.SparkMaxFactory.Configuration;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;;
 
-public abstract class SparkMaxSubsystem extends SubsystemBase implements PeriodicSubsystem{
+public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
 
     private CANSparkMax master;
     private CANEncoder encoder;
@@ -28,6 +27,7 @@ public abstract class SparkMaxSubsystem extends SubsystemBase implements Periodi
         public double velocity;
 
         // outputs
+        /** In Volts */
         public double feedforward;
         public double demand;
     }
@@ -43,6 +43,7 @@ public abstract class SparkMaxSubsystem extends SubsystemBase implements Periodi
                 ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
     }
 
+    @Override
     public void init() {
         try {
             setToBrake();
@@ -57,25 +58,27 @@ public abstract class SparkMaxSubsystem extends SubsystemBase implements Periodi
         }
     }
 
+    @Override
     public void readPeriodicInputs() {
         periodicIO.position = encoder.getPosition() * m_pidConfig.kEncoderTicksToUnits;
         periodicIO.velocity = encoder.getVelocity() * m_pidConfig.kEncoderVelocityToRPM;
     }
 
+    @Override
     public void writePeriodicOutputs() {
-        setSparkMax(controlType, periodicIO.demand, periodicIO.feedforward);
+        try {
+            setSparkMax(controlType, periodicIO.demand, periodicIO.feedforward);
+        } catch (NullPointerException e) {
+            HALMethods.sendDSError(e.toString());
+            controlType = ControlType.kDutyCycle;
+            periodicIO = new PeriodicIO();
+        }
     }
 
+    @Override
     public void end() {
         setOpenloop(0);
         periodicIO.feedforward = 0;
-    }
-
-
-    @Override
-    public void periodic() {
-        readPeriodicInputs();
-        writePeriodicOutputs();
     }
 
     protected void setEncoderPosition(double newPosition) {
@@ -138,11 +141,13 @@ public abstract class SparkMaxSubsystem extends SubsystemBase implements Periodi
         pidController.setReference(demand, controlType, 0, feedForward);
     }
 
-    protected <T> void addFollower(T follower) {
-        if (follower instanceof CANSparkMax) {
-            CANSparkMax cFollower = (CANSparkMax) follower;
-            cFollower.follow(master);
-            cFollower.setInverted(master.getInverted());
-        }
+    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config, boolean isInvertedFromMaster) {
+        CANSparkMax follower = SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
+        follower.follow(master, isInvertedFromMaster);
+        return follower;
+    }
+
+    protected CANSparkMax getMaster() {
+        return master;
     }
 }

@@ -25,7 +25,7 @@ import lib.wpi.HALMethods;
 /**
  * Add your docs here.
  */
-public abstract class TalonSRXSubsystem extends SubsystemBase implements PeriodicSubsystem {
+public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
 
     private TalonSRX master;
     private ControlMode controlMode = ControlMode.Disabled;
@@ -82,11 +82,6 @@ public abstract class TalonSRXSubsystem extends SubsystemBase implements Periodi
     public void end() {
         setOpenloop(0);
         periodicIO.feedforward = 0;
-    }
-
-    @Override
-    public void periodic() {
-
     }
 
     /**
