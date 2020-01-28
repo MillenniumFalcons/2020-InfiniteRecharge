@@ -26,17 +26,6 @@ import lib.wpi.Timer;
 
 public class Drivetrain implements PeriodicSubsystem {
 
-    private static Drivetrain INSTANCE;
-
-    public static Drivetrain getInstance() {
-        if (INSTANCE != null) {
-            return INSTANCE;
-        } else {
-            throw new UnsupportedOperationException(
-                    "You must initialize drivetrain before using getInstance");
-        }
-    }
-
     private static int constructCount = 0;
     private static final double kDt = .02;
     private CANSparkMax leftMaster;
@@ -105,7 +94,6 @@ public class Drivetrain implements PeriodicSubsystem {
         kEncoderVelocityToMetersPerSecond =
                 m_leftPIDConfig.kEncoderVelocityToRPM * kWheelDiameterMeters * Math.PI;
         m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
-        INSTANCE = this;
         constructCount++;
         shifted = false;
     }
@@ -214,6 +202,7 @@ public class Drivetrain implements PeriodicSubsystem {
             periodicIO.leftFeedForward = 0;
             periodicIO.rightFeedForward = 0;
         }
+
         try {
             m_leftVelocityPID.setReference(periodicIO.leftOutput, controlType, 0,
                     periodicIO.leftFeedForward);
@@ -272,25 +261,35 @@ public class Drivetrain implements PeriodicSubsystem {
         }
     }
 
-    public void setShifters(boolean on) {
+    private void setShifters(boolean on) {
         leftShifter.set(on);
         rightShifter.set(on);
         shifted = on;
+    }
+
+    public void shift() {
+        setShifters(true);
+    }
+
+    public void unShift() {
+        setShifters(false);
     }
 
     /**
      * @param driveSignal in meters per second
      */
     public synchronized void setVelocity(DriveSignal driveSignal) {
-        if (driveSignal != null && !shifted) {
-            periodicIO.leftFeedForward = feedforward.calculate(driveSignal.getLeft(),
-                    (driveSignal.getLeft() - periodicIO.leftVelocity) / .02);
-            periodicIO.rightFeedForward = feedforward.calculate(driveSignal.getRight(),
-                    (driveSignal.getRight() - periodicIO.rightVelocity) / .02);
+        if (driveSignal != null) {
+            if (!isShifted()) {
+                periodicIO.leftFeedForward = feedforward.calculate(driveSignal.getLeft(),
+                        (driveSignal.getLeft() - periodicIO.leftVelocity) / .02);
+                periodicIO.rightFeedForward = feedforward.calculate(driveSignal.getRight(),
+                        (driveSignal.getRight() - periodicIO.rightVelocity) / .02);
 
-            periodicIO.leftOutput = driveSignal.getLeft() / kEncoderVelocityToMetersPerSecond;
-            periodicIO.rightOutput = driveSignal.getRight() / kEncoderVelocityToMetersPerSecond;
-            controlType = ControlType.kVelocity;
+                periodicIO.leftOutput = driveSignal.getLeft() / kEncoderVelocityToMetersPerSecond;
+                periodicIO.rightOutput = driveSignal.getRight() / kEncoderVelocityToMetersPerSecond;
+                controlType = ControlType.kVelocity;
+            }
         } else {
             HALMethods.sendDSError("Drive signal in setVelocity(DriveSignal) was null");
             end();
@@ -458,7 +457,7 @@ public class Drivetrain implements PeriodicSubsystem {
         return new DifferentialDriveWheelSpeeds(periodicIO.leftVelocity, periodicIO.rightVelocity);
     }
 
-    public boolean isShifter() {
+    public boolean isShifted() {
         return shifted;
     }
 

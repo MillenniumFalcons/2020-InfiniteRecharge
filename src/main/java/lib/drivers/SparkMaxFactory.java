@@ -16,54 +16,46 @@ public class SparkMaxFactory {
 
     public static class Configuration {
         public final int CANID;
-        public final int maxFreeSpeedCurrent;
-        public final int maxStallCurrent;
-        public final boolean isInverted;
-        public final IdleMode idleMode;
-        public final boolean voltageCompensation;
-        public final double nominalVoltage;
+        public final boolean inverted;
 
-        private Configuration() {
-            CANID = 0;
-            maxFreeSpeedCurrent = 0;
-            maxStallCurrent = 0;
-            isInverted = false;
-            idleMode = IdleMode.kCoast;
-            voltageCompensation = false;
-            nominalVoltage = 12;
+        public boolean enableCurrentLimiting = false;
+        public int maxFreeSpeedCurrent;
+        public int maxStallCurrent;
+
+        public IdleMode idleMode;
+        public boolean voltageCompensation = false;
+        public double nominalVoltage;
+
+        public Configuration(int CANID, boolean inverted) {
+            this.CANID = CANID;
+            this.inverted = inverted;
         }
 
-        public Configuration(int CANID) {
-            this.CANID = CANID;
-            maxFreeSpeedCurrent = 0;
-            maxStallCurrent = 0;
-            isInverted = false;
-            idleMode = IdleMode.kCoast;
-            voltageCompensation = false;
-            nominalVoltage = 12;
-        }
-
-        public Configuration(int CANID, int maxFreeSpeedCurrent, int maxStallCurrent,
-                boolean isInverted, IdleMode idleMode, boolean voltageCompensation,
-                double nominalVoltage) {
-            this.CANID = CANID;
+        public Configuration currentLimiting(boolean enabled, int maxFreeSpeedCurrent,
+                int maxStallCurrent) {
             this.maxFreeSpeedCurrent = maxFreeSpeedCurrent;
             this.maxStallCurrent = maxStallCurrent;
-            this.isInverted = isInverted;
+            enableCurrentLimiting = enabled;
+            return this;
+        }
 
-            this.idleMode = idleMode;
-            this.voltageCompensation = voltageCompensation;
+        public Configuration voltageCompensation(boolean enabled, double nominalVoltage) {
             this.nominalVoltage = nominalVoltage;
+            voltageCompensation = enabled;
+            return this;
+        }
+
+        public Configuration idleMode(IdleMode mode) {
+            this.idleMode = mode;
+            return this;
         }
 
         public static Configuration mirrorWithCANID(Configuration config, int CANID) {
-            return new Configuration(CANID, config.maxFreeSpeedCurrent, config.maxStallCurrent,
-                    config.isInverted, config.idleMode, config.voltageCompensation,
-                    config.nominalVoltage);
+            return new Configuration(CANID, config.inverted);
         }
     }
 
-    public static final Configuration DEFAULT = new Configuration();
+    public static final Configuration DEFAULT = new Configuration(0, false);
 
     private static void handleCANError(int id, CANError error, String message) {
         if (error != CANError.kOk) {
@@ -75,11 +67,15 @@ public class SparkMaxFactory {
     public static CANSparkMax createSparkMax(Configuration config) {
         CANSparkMax sparkmax = new CANSparkMax(config.CANID, MotorType.kBrushless);
         handleCANError(config.CANID, sparkmax.restoreFactoryDefaults(), "restore factory defaults");
-        handleCANError(config.CANID,
-                sparkmax.setSmartCurrentLimit(config.maxStallCurrent, config.maxFreeSpeedCurrent),
-                "set current limiting");
-        sparkmax.setInverted(config.isInverted);
+
+        if (config.enableCurrentLimiting) {
+            handleCANError(config.CANID, sparkmax.setSmartCurrentLimit(config.maxStallCurrent,
+                    config.maxFreeSpeedCurrent), "set current limiting");
+        }
+
+        sparkmax.setInverted(config.inverted);
         handleCANError(config.CANID, sparkmax.setIdleMode(config.idleMode), "set idle mode");
+
         if (config.voltageCompensation) {
             handleCANError(config.CANID, sparkmax.enableVoltageCompensation(config.nominalVoltage),
                     "set voltage compensation");

@@ -15,7 +15,6 @@ import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.BaseMotorController;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lib.drivers.TalonSRXUtil;
 import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 import lib.drivers.ClosedLoopFactory;
@@ -23,7 +22,7 @@ import lib.drivers.TalonSRXFactory;
 import lib.wpi.HALMethods;
 
 /**
- * Add your docs here.
+ * Add your own bound checking!
  */
 public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
 
@@ -68,8 +67,8 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
 
     @Override
     public void readPeriodicInputs() {
-        periodicIO.position = master.getSelectedSensorPosition();
-        periodicIO.velocity = master.getSelectedSensorVelocity();
+        periodicIO.position = master.getSelectedSensorPosition() * m_pidConfig.kEncoderTicksToUnits;
+        periodicIO.velocity = master.getSelectedSensorVelocity() * m_pidConfig.kEncoderVelocityToRPM;
     }
 
     @Override
@@ -166,11 +165,12 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         }
     }
 
-    protected <T> void addFollower(T follower) {
-        if (follower instanceof BaseMotorController) {
-            BaseMotorController cFollower = (BaseMotorController) follower;
-            cFollower.follow(master);
-            cFollower.setInverted(InvertType.FollowMaster);
+    protected void addFollower(BaseMotorController follower, boolean isInvertedFromMaster) {
+        follower.follow(master);
+        InvertType invertType = InvertType.FollowMaster;
+        if(isInvertedFromMaster) {
+            invertType = InvertType.InvertMotorOutput;
         }
+        follower.setInverted(invertType);
     }
 }

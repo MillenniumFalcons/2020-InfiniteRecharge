@@ -18,43 +18,43 @@ public class TalonSRXFactory {
 
     public static class Configuration {
         public final int CANID;
-        public final int peakCurrent;
-        public final int peakCurrentDuration;
-        public final int continuousCurrent;
         public final boolean inverted;
-        public final NeutralMode neutralMode;
-        public final boolean voltageCompensation;
-        public final double nominalVoltage;
-        public final boolean enableCurrentLimiting;
 
-        private Configuration() {
-            this.CANID = 0;
-            this.peakCurrent = 1;
-            this.peakCurrentDuration = 0;
-            this.continuousCurrent = 1;
-            this.inverted = false;
-            this.neutralMode = NeutralMode.Coast;
-            this.voltageCompensation = false;
-            this.nominalVoltage = 12.0;
-            this.enableCurrentLimiting = false;
+        public boolean enableCurrentLimiting = false;
+        public int peakCurrent = 0;
+        public int peakCurrentDuration = 0;
+        public int continuousCurrent = 0;
+        public NeutralMode neutralMode = NeutralMode.Coast;
+        public boolean voltageCompensation = false;
+        public double nominalVoltage = 0.0;
+
+        private Configuration(int CANID, boolean inverted) {
+            this.CANID = CANID;
+            this.inverted = inverted;
         }
 
-        public Configuration(int CANID, int peakCurrent, int peakCurrentDuration,
-                int continuousCurrent, boolean inverted, NeutralMode neutralMode,
-                boolean voltageCompensation, double nominalVoltage, boolean enableCurrentLimiting) {
-            this.CANID = CANID;
+        public Configuration currentLimiting(int peakCurrent, int peakCurrentDuration,
+                int continuousCurrent) {
+            enableCurrentLimiting = true;
             this.peakCurrent = peakCurrent;
             this.peakCurrentDuration = peakCurrentDuration;
             this.continuousCurrent = continuousCurrent;
-            this.inverted = inverted;
-            this.neutralMode = neutralMode;
-            this.voltageCompensation = voltageCompensation;
+            return this;
+        }
+
+        public Configuration voltageCompensation(double nominalVoltage) {
             this.nominalVoltage = nominalVoltage;
-            this.enableCurrentLimiting = enableCurrentLimiting;
+            this.voltageCompensation = true;
+            return this;
+        }
+
+        public Configuration neutralMode(NeutralMode mode) {
+            this.neutralMode = mode;
+            return this;
         }
     }
 
-    private static final Configuration DEFAULT = new Configuration();
+    private static final Configuration DEFAULT = new Configuration(0, false);
 
 
     private static void handleCANError(int id, ErrorCode error, String message) {

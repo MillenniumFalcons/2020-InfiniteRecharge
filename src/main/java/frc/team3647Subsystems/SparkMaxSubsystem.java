@@ -12,6 +12,9 @@ import lib.wpi.HALMethods;
 import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 import lib.drivers.SparkMaxFactory.Configuration;
 
+/**
+ * Add you own bounds.
+ */
 public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
 
     private CANSparkMax master;
@@ -141,8 +144,10 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
         pidController.setReference(demand, controlType, 0, feedForward);
     }
 
-    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config, boolean isInvertedFromMaster) {
-        CANSparkMax follower = SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
+    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config,
+            boolean isInvertedFromMaster) {
+        CANSparkMax follower =
+                SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
         follower.follow(master, isInvertedFromMaster);
         return follower;
     }

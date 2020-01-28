@@ -21,8 +21,8 @@ public class Indexer implements PeriodicSubsystem {
     private VictorSPX rollers;
 
     public Indexer() {
-
     }
+
 
     public void set(IndexerSignal signal) {
         funnel.set(ControlMode.PercentOutput, signal.getFunnelOutput());
