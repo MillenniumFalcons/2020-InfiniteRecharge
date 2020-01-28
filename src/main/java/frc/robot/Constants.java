@@ -3,6 +3,7 @@ package frc.robot;
 import com.revrobotics.CANSparkMax.IdleMode;
 import lib.drivers.SparkMaxFactory;
 import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
+import lib.team3647Utils.RGB;
 
 public class Constants {
 
@@ -44,15 +45,24 @@ public class Constants {
 
         }
 
-        public static class BallIntake {
-                public static final int solenoidPin1 = 0;
-                public static final int solenoidPin2 = 3;
-                public static final int intakeMotorPin = 2;
-        }
+    public static class BallIntake {
+        public static final int solenoidPin1 = 0;
+        public static final int solenoidPin2 = 3;
+        public static final int intakeMotorPin = 2;
+    }
 
-        /**
-         * In order to make the class not be able to be an object
-         */
-        private Constants() {
-        }
+    public static class cPPSpinner {
+        public static final RGB red = new RGB(new double[] { .51, .35, .14 });
+        public static final RGB green = new RGB(new double[] { .15, .59, .25 });
+        public static final RGB blue = new RGB(new double[] { .12, .42, .45 });
+        public static final RGB yellow = new RGB(new double[] { .32, .56, .12 });
+        // public static final RGB test = new RGB(new double[] {});
+        public static final double colorThreshold = 0.05; // percentage
+    }
+
+    /**
+     * In order to make the class not be able to be an object
+     */
+    private Constants() {
+    }
 }
