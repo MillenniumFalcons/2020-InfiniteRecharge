@@ -57,10 +57,10 @@ public class Drivetrain implements PeriodicSubsystem {
 
     private final DifferentialDriveOdometry m_odometry;
 
-    private PigeonIMU m_gyro;
+    // private final PigeonIMU m_gyro;
 
-    private Solenoid leftShifter;
-    private Solenoid rightShifter;
+    // private Solenoid leftShifter;
+    // private Solenoid rightShifter;
 
     private boolean shifted;
 
@@ -81,7 +81,7 @@ public class Drivetrain implements PeriodicSubsystem {
         rightMaster = SparkMaxFactory.createSparkMax(m_rightMasterConfig);
 
         leftSlave = SparkMaxFactory.createSparkMaxFollower(leftMaster, leftSlaveConfig);
-        leftSlave = SparkMaxFactory.createSparkMaxFollower(rightMaster, rightSlaveConfig);
+        rightSlave = SparkMaxFactory.createSparkMaxFollower(rightMaster, rightSlaveConfig);
 
         leftEncoder = leftMaster.getEncoder();
         rightEncoder = rightMaster.getEncoder();
@@ -105,7 +105,7 @@ public class Drivetrain implements PeriodicSubsystem {
         /** Meters per second */
         public double rightVelocity;
 
-        public double ypr[];
+        public double ypr[] = new double[]{0, 0, 0};
 
         /** Meters */
         public double leftPosition;
@@ -175,7 +175,7 @@ public class Drivetrain implements PeriodicSubsystem {
                     rightEncoder.getVelocity() * kEncoderVelocityToMetersPerSecond;
         }
 
-        m_gyro.getYawPitchRoll(periodicIO.ypr);
+        // m_gyro.getYawPitchRoll(periodicIO.ypr);
         periodicIO.heading = Math.IEEEremainder(periodicIO.ypr[0], 360);
     }
 
@@ -262,8 +262,8 @@ public class Drivetrain implements PeriodicSubsystem {
     }
 
     private void setShifters(boolean on) {
-        leftShifter.set(on);
-        rightShifter.set(on);
+        // leftShifter.set(on);
+        // rightShifter.set(on);
         shifted = on;
     }
 
@@ -330,22 +330,24 @@ public class Drivetrain implements PeriodicSubsystem {
         if (scaleInputs) {
             m_maxOutput = .7;
         }
-        double currentLeftDesiredVelocity = MathUtil.clamp(leftMotorOutput, -1.0, 1.0) * m_maxOutput
-                * m_leftPIDConfig.maxVelocity;
-        double currentRightDesiredVelocity = MathUtil.clamp(rightMotorOutput, -1.0, 1.0)
-                * m_maxOutput * m_rightPIDConfig.maxVelocity;
+        // double currentLeftDesiredVelocity = MathUtil.clamp(leftMotorOutput, -1.0, 1.0) * m_maxOutput
+        //         * m_leftPIDConfig.maxVelocity;
+        // double currentRightDesiredVelocity = MathUtil.clamp(rightMotorOutput, -1.0, 1.0)
+        //         * m_maxOutput * m_rightPIDConfig.maxVelocity;
 
-        double leftVoltage = feedforward.calculate(currentLeftDesiredVelocity,
-                (currentLeftDesiredVelocity - periodicIO.prevLeftDesiredVelocity) / kDt);
-        double rightVoltage = feedforward.calculate(currentRightDesiredVelocity,
-                (currentRightDesiredVelocity - periodicIO.prevRightDesiredVelocity) / kDt);
+        // double leftVoltage = feedforward.calculate(currentLeftDesiredVelocity,
+        //         (currentLeftDesiredVelocity - periodicIO.prevLeftDesiredVelocity) / kDt);
+        // double rightVoltage = feedforward.calculate(currentRightDesiredVelocity,
+        //         (currentRightDesiredVelocity - periodicIO.prevRightDesiredVelocity) / kDt);
 
-        if (shifted) {
-            setOpenLoop(new DriveSignal(xSpeed, xSpeed));
-        } else {
-            setOpenLoop(new DriveSignal(leftVoltage / m_leftMasterConfig.nominalVoltage,
-                    rightVoltage / m_rightMasterConfig.nominalVoltage));
-        }
+        // if (shifted) {
+        //     setOpenLoop(new DriveSignal(xSpeed, xSpeed));
+        // } else {
+        //     setOpenLoop(new DriveSignal(leftVoltage / m_leftMasterConfig.nominalVoltage,
+        //             rightVoltage / m_rightMasterConfig.nominalVoltage));
+        // }
+
+        setOpenLoop(new DriveSignal(leftMotorOutput, rightMotorOutput));
 
         periodicIO.prevLeftDesiredVelocity = leftMotorOutput * m_leftPIDConfig.maxVelocity;
         periodicIO.prevRightDesiredVelocity = rightMotorOutput * m_rightPIDConfig.maxVelocity;
@@ -484,7 +486,8 @@ public class Drivetrain implements PeriodicSubsystem {
      * Zeroes the heading of the robot.
      */
     public void zeroHeading() {
-        m_gyro.setYaw(0);
+        // m_gyro.setYaw(0);
+        
     }
 
     public double getHeading() {

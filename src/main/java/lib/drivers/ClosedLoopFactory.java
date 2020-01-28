@@ -21,17 +21,17 @@ import edu.wpi.first.wpilibj.DriverStation;
  */
 public class ClosedLoopFactory {
     public static class ClosedLoopConfig {
-        public final double kEncoderAccelerationToUnits;
-        public final double kEncoderVelocityToRPM;
-        public final double kEncoderTicksToUnits;
-        public final double kP, kI, kD;
-        public final double kS, kV, kA;
-        public final double maxVelocity;
-        public final double maxAcceleration;
-        public final double positionThreshold;
-        public final double velocityThreshold;
+        public double kEncoderAccelerationToUnits;
+        public double kEncoderVelocityToRPM;
+        public double kEncoderTicksToUnits;
+        public double kP, kI, kD;
+        public double kS, kV, kA;
+        public double maxVelocity;
+        public double maxAcceleration;
+        public double positionThreshold;
+        public double velocityThreshold;
 
-        private ClosedLoopConfig() {
+        public ClosedLoopConfig() {
             kEncoderAccelerationToUnits = 1;
             kEncoderVelocityToRPM = 1;
             kEncoderTicksToUnits = 1;
@@ -41,16 +41,16 @@ public class ClosedLoopFactory {
             kS = 0;
             kV = 0;
             kA = 0;
-            maxVelocity = 1;
-            maxAcceleration = 1;
-            positionThreshold = 1;
-            velocityThreshold = 1;
+            maxVelocity = 0;
+            maxAcceleration = 0;
+            positionThreshold = 0;
+            velocityThreshold = 0;
         }
 
         public ClosedLoopConfig(double kEncoderAccelerationToUnits, double kEncoderVelocityToRPM,
-                double kEncoderTicksToUnits, double kP, double kI, double kD, double kS, double kV,
-                double kA, double[] feedForwardArr, double maxVelocity, double maxAcceleration,
-                double positionThreshold, double velocityThreshold) {
+                double kEncoderTicksToUnits, double kP, double kI, double kD, double kS, double kV, double kA,
+                double[] feedForwardArr, double maxVelocity, double maxAcceleration, double positionThreshold,
+                double velocityThreshold) {
             this.kEncoderAccelerationToUnits = kEncoderAccelerationToUnits;
             this.kEncoderVelocityToRPM = kEncoderVelocityToRPM;
             this.kEncoderTicksToUnits = kEncoderTicksToUnits;
@@ -65,19 +65,68 @@ public class ClosedLoopFactory {
             this.positionThreshold = positionThreshold;
             this.velocityThreshold = velocityThreshold;
         }
+
+        public ClosedLoopConfig positionThreshold(double positionThreshld) {
+            this.positionThreshold = positionThreshld;
+            return this;
+        }
+
+        public ClosedLoopConfig velocityThrehsold(double velocityThreshold) {
+            this.velocityThreshold = velocityThreshold;
+            return this;
+        }
+
+        public ClosedLoopConfig maxAcceleration(double maxAcceleration) {
+            this.maxAcceleration = maxAcceleration;
+            return this;
+        }
+
+        public ClosedLoopConfig maxVelocity(double maxVelocity) {
+            this.maxVelocity = maxVelocity;
+            return this;
+        }
+
+        public ClosedLoopConfig configPID(double kP, double kI, double kD) {
+            this.kP = kP;
+            this.kI = kI;
+            this.kD = kD;
+            return this;
+        }
+
+        public ClosedLoopConfig configFeedForward(double kS, double kV, double kA) {
+            this.kS = kS;
+            this.kV = kV;
+            this.kA = kA;
+            return this;
+        }
+
+        public ClosedLoopConfig encoderAccelerationToUnits(double encoderAccelerationToUnits) {
+            this.kEncoderAccelerationToUnits = encoderAccelerationToUnits;
+            return this;
+        }
+
+        public ClosedLoopConfig encoderVelocityToRPM(double encoderVelocityToRPM) {
+            this.kEncoderVelocityToRPM = encoderVelocityToRPM;
+            return this;
+        }
+
+        public ClosedLoopConfig encoderTicksToUnits(double encoderTicksToUnits) {
+            this.kEncoderTicksToUnits = encoderTicksToUnits;
+            return this;
+        }
     }
 
     public static ClosedLoopConfig DEFAULT = new ClosedLoopConfig();
 
     private static void handleCANError(int id, CANError error, String message) {
         if (error != CANError.kOk) {
-            DriverStation.reportError("Could not configure spark id: " + id + " error: "
-                    + error.toString() + " " + message, false);
+            DriverStation.reportError(
+                    "Could not configure spark id: " + id + " error: " + error.toString() + " " + message, false);
         }
     }
 
-    public static CANPIDController createSparkMaxPIDController(CANSparkMax master,
-            CANEncoder feedbackDevice, ClosedLoopConfig config, int slot) {
+    public static CANPIDController createSparkMaxPIDController(CANSparkMax master, CANEncoder feedbackDevice,
+            ClosedLoopConfig config, int slot) {
         CANPIDController controller = master.getPIDController();
         configSparkMaxPIDController(controller, master, feedbackDevice, config, slot);
         return controller;
@@ -91,37 +140,31 @@ public class ClosedLoopFactory {
         handleCANError(id, controller.setP(config.kP, slot), "set P");
         handleCANError(id, controller.setI(config.kI, slot), "set I");
         handleCANError(id, controller.setD(config.kD, slot), "set D");
-        handleCANError(id, controller.setSmartMotionMaxAccel(maxAccelerationTicks, slot),
-                "set smart motion accel");
-        handleCANError(id, controller.setSmartMotionMaxVelocity(maxVelocityTicks, slot),
-                "set smart motion max vel");
+        handleCANError(id, controller.setSmartMotionMaxAccel(maxAccelerationTicks, slot), "set smart motion accel");
+        handleCANError(id, controller.setSmartMotionMaxVelocity(maxVelocityTicks, slot), "set smart motion max vel");
         handleCANError(id, controller.setSmartMotionMinOutputVelocity(-maxVelocityTicks, slot),
                 "set smart motion min vel");
         handleCANError(id, controller.setFeedbackDevice(feedbackDevice), "set feedback device");
     }
 
-
     private static void handleCANError(int id, ErrorCode error, String message) {
         if (error != ErrorCode.OK) {
-            DriverStation.reportError("Could not configure talon id: " + id + " error: "
-                    + error.toString() + " " + message, false);
+            DriverStation.reportError(
+                    "Could not configure talon id: " + id + " error: " + error.toString() + " " + message, false);
         }
     }
 
-    public static void configTalonPIDController(TalonSRX talon, FeedbackDevice feedbackDevice,
-            ClosedLoopConfig config, int slot) {
+    public static void configTalonPIDController(TalonSRX talon, FeedbackDevice feedbackDevice, ClosedLoopConfig config,
+            int slot) {
         int id = talon.getDeviceID();
-        int maxVelocityTicks = (int)(config.maxVelocity / config.kEncoderVelocityToRPM);
-        int maxAccelerationTicks = (int)(config.maxVelocity / config.kEncoderAccelerationToUnits);
+        int maxVelocityTicks = (int) (config.maxVelocity / config.kEncoderVelocityToRPM);
+        int maxAccelerationTicks = (int) (config.maxVelocity / config.kEncoderAccelerationToUnits);
         handleCANError(id, talon.config_kP(slot, config.kP), "set kP");
         handleCANError(id, talon.config_kI(slot, config.kI), "set kI");
         handleCANError(id, talon.config_kD(slot, config.kD), "set kD");
-        handleCANError(id, talon.configMotionAcceleration(maxAccelerationTicks),
-                "set acceleration");
-        handleCANError(id, talon.configMotionCruiseVelocity(maxVelocityTicks),
-                "set velocity");
-        handleCANError(id, talon.configSelectedFeedbackSensor(feedbackDevice, slot, 0),
-                "config feedback device");
+        handleCANError(id, talon.configMotionAcceleration(maxAccelerationTicks), "set acceleration");
+        handleCANError(id, talon.configMotionCruiseVelocity(maxVelocityTicks), "set velocity");
+        handleCANError(id, talon.configSelectedFeedbackSensor(feedbackDevice, slot, 0), "config feedback device");
 
     }
 }
