@@ -38,26 +38,37 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
     private PeriodicIO periodicIO = new PeriodicIO();
 
     protected SparkMaxSubsystem(Configuration masterConfig, ClosedLoopConfig pidConfig) {
+        boolean error = false;
+        if (masterConfig == null) {
+            HALMethods.sendDSError("Master config sparkmax Subsystem " + getName() + " was null");
+            error = true;
+        }
+
+        if (pidConfig == null) {
+            HALMethods.sendDSError("pid config sparkmax subsystem " + getName() + " was null");
+            error = true;
+        }
+
+        if(error) {
+            throw new IllegalArgumentException("either master config or pid config were null");
+        }
         m_masterConfig = masterConfig;
         m_pidConfig = pidConfig;
         master = SparkMaxFactory.createSparkMax(m_masterConfig);
         encoder = master.getEncoder();
-        pidController =
-                ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
+        pidController = ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
     }
 
     @Override
     public void init() {
         try {
             setToBrake();
-            ClosedLoopFactory.configSparkMaxPIDController(pidController, master, encoder,
-                    m_pidConfig, 0);
+            ClosedLoopFactory.configSparkMaxPIDController(pidController, master, encoder, m_pidConfig, 0);
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
             master = SparkMaxFactory.createSparkMax(m_masterConfig);
             encoder = master.getEncoder();
-            pidController =
-                    ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
+            pidController = ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
         }
     }
 
@@ -144,10 +155,8 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
         pidController.setReference(demand, controlType, 0, feedForward);
     }
 
-    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config,
-            boolean isInvertedFromMaster) {
-        CANSparkMax follower =
-                SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
+    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config, boolean isInvertedFromMaster) {
+        CANSparkMax follower = SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
         follower.follow(master, isInvertedFromMaster);
         return follower;
     }

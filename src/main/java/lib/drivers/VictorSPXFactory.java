@@ -7,8 +7,10 @@
 
 package lib.drivers;
 
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+
 /**
- * Add your docs here.
+ * Create victor with configs.
  */
 public class VictorSPXFactory {
 
@@ -24,5 +26,11 @@ public class VictorSPXFactory {
             this.inverted = inverted;
             return this;
         }
+    }
+
+    public static VictorSPX createVictor(Configuration config) {
+        VictorSPX victor = new VictorSPX(config.CANID);
+        victor.setInverted(config.inverted);
+        return victor;
     }
 }

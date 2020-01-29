@@ -17,7 +17,7 @@ import com.revrobotics.CANSparkMax;
 import edu.wpi.first.wpilibj.DriverStation;
 
 /**
- * Add your docs here.
+ * Config pid loops and feed forward for motors.
  */
 public class ClosedLoopFactory {
     public static class ClosedLoopConfig {

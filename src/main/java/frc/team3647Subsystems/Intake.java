@@ -9,6 +9,8 @@ package frc.team3647Subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+
+import lib.drivers.VictorSPXFactory;
 import lib.wpi.Solenoid;
 
 /**
@@ -23,8 +25,11 @@ public class Intake implements PeriodicSubsystem {
 
     private final VictorSPX intakeMotor;
 
-    public Intake(int motorCANID, int leftPin1, int rightPin1, int leftPin2, int rightPin2) {
-        intakeMotor = new VictorSPX(motorCANID);
+    public Intake(VictorSPXFactory.Configuration intakeMotorConfig, int leftPin1, int rightPin1, int leftPin2, int rightPin2) {
+        if(intakeMotorConfig == null) {
+            throw new IllegalArgumentException("Intake motor config was null");
+        }
+        intakeMotor = VictorSPXFactory.createVictor(intakeMotorConfig);
         innerLeftPiston = new Solenoid(leftPin1);
         innerRightPiston = new Solenoid(rightPin1);
         outerLeftPiston = new Solenoid(leftPin2);
