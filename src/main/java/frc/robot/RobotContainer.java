@@ -109,8 +109,9 @@ public class RobotContainer {
 
 
         m_commandScheduler.setDefaultCommand(m_indexer, new RunCommand(() -> {
-            m_indexer.set(new IndexerSignal(mainController.getRightStickY(), mainController.getRightStickY() * .5, -mainController.getRightStickY() * .5));
-                    // mainController.getRightStickY(), mainController.getRightStickY()));
+            m_indexer.set(new IndexerSignal(mainController.getRightStickY(),
+                    mainController.getRightStickY() * .5, -mainController.getRightStickY() * .5));
+            // mainController.getRightStickY(), mainController.getRightStickY()));
         }, m_indexer));
 
         m_commandScheduler.setDefaultCommand(m_intake, new RunCommand(() -> {
@@ -118,7 +119,7 @@ public class RobotContainer {
         }, m_intake));
 
         m_commandScheduler.setDefaultCommand(m_kickerWheel, new RunCommand(() -> {
-            m_kickerWheel.setOpenloop(mainController.getLeftStickY() );
+            m_kickerWheel.setOpenloop(mainController.getLeftStickY());
         }, m_kickerWheel));
         // m_commandScheduler.setDefaultCommand(m_drivetrain,
         // new ArcadeDrive(m_drivetrain, mainController::getLeftStickY,

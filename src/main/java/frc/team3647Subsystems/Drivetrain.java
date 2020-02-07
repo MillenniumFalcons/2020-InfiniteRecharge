@@ -232,9 +232,9 @@ public class Drivetrain implements PeriodicSubsystem {
     public void periodic() {
         PeriodicSubsystem.super.periodic();
         m_timeStamp = Timer.getFPGATimestamp();
-        Pose2d pose = m_odometry.update(Rotation2d.fromDegrees(getHeading()), periodicIO.leftPosition,
-                periodicIO.rightPosition);
-                
+        Pose2d pose = m_odometry.update(Rotation2d.fromDegrees(getHeading()),
+                periodicIO.leftPosition, periodicIO.rightPosition);
+
     }
 
     @Override

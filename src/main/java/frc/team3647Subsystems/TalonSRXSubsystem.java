@@ -146,7 +146,6 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         controlMode = ControlMode.PercentOutput;
     }
 
-
     protected boolean reachedPosition(double position) {
         return position < getPosition() + m_pidConfig.positionThreshold
                 && position > getPosition() - m_pidConfig.positionThreshold;
@@ -208,6 +207,4 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         }
         follower.setInverted(invertType);
     }
-
-
 }

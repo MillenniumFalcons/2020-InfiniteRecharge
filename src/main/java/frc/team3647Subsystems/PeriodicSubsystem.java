@@ -24,7 +24,6 @@ public interface PeriodicSubsystem extends Subsystem {
         readPeriodicInputs();
         writePeriodicOutputs();
     }
-
-
+    
     public String getName();
 }

@@ -19,8 +19,7 @@ public class Flywheel extends SparkMaxSubsystem {
     private CANSparkMax follower;
 
     public Flywheel(SparkMaxFactory.Configuration masterConfig,
-            SparkMaxFactory.Configuration followerConfig,
-            ClosedLoopConfig pidConfig) {
+            SparkMaxFactory.Configuration followerConfig, ClosedLoopConfig pidConfig) {
         super(masterConfig, pidConfig);
         follower = addFollower(followerConfig, true);
     }
@@ -28,7 +27,6 @@ public class Flywheel extends SparkMaxSubsystem {
     public void setRPM(double RPM) {
         setVelocity(RPM);
     }
-
 
     @Override
     public String getName() {

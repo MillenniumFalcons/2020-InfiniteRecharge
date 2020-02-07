@@ -44,13 +44,11 @@ public class VisionController implements PeriodicSubsystem {
         public Limelight.StreamMode streamMode = Limelight.StreamMode.Limelight;
     }
 
-
     private final Limelight limelight;
     private final CamConstants m_constants;
     private VisionTarget latestTarget;
     private boolean outputsHaveChanged = false;
     private PeriodicIO periodicIO = new PeriodicIO();
-
 
     public VisionController(String camIP, CamConstants constants) {
         Objects.requireNonNull(camIP);
@@ -127,5 +125,4 @@ public class VisionController implements PeriodicSubsystem {
     public String getName() {
         return "VisionController";
     }
-
 }

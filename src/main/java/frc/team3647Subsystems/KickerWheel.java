@@ -28,6 +28,4 @@ public class KickerWheel extends TalonSRXSubsystem {
     public String getName() {
         return "KickerWheel";
     }
-
-
 }

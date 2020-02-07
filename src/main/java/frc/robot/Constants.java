@@ -1,6 +1,5 @@
 package frc.robot;
 
-import java.util.function.Function;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.revrobotics.CANSparkMax.IdleMode;
 import edu.wpi.first.wpilibj.kinematics.DifferentialDriveKinematics;
@@ -203,12 +202,12 @@ public class Constants {
 
         public static TalonSRXFactory.Configuration masterConfig =
                 new TalonSRXFactory.Configuration(masterPin, inverted);
-                        // .neutralMode(NeutralMode.Brake).voltageCompensation(true, nominalVoltage)
-                        // .currentLimiting(true, peakCurrent, peakCurrentDuration, continuousCurrent);
+        // .neutralMode(NeutralMode.Brake).voltageCompensation(true, nominalVoltage)
+        // .currentLimiting(true, peakCurrent, peakCurrentDuration, continuousCurrent);
         public static ClosedLoopConfig pidConfig = new ClosedLoopConfig().configPID(kP, kI, kD);
-                // .configFeedForward(kS, kV, kA).encoderTicksToUnits(encoderTicksToUnits)
-                // .encoderVelocityToRPM(encoderVelocityToRPM)
-                // .encoderAccelerationToUnits(encoderVelocityToRPM);
+        // .configFeedForward(kS, kV, kA).encoderTicksToUnits(encoderTicksToUnits)
+        // .encoderVelocityToRPM(encoderVelocityToRPM)
+        // .encoderAccelerationToUnits(encoderVelocityToRPM);
     }
 
     public static class cFlywheel {

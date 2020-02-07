@@ -17,9 +17,7 @@ import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 public class Turret extends TalonSRXSubsystem {
     private final double kMaxRotationDeg;
     private final double kMinRotationDeg;
-
     private DigitalInput limitSwitch;
-
     private boolean isOnLimitSwitch = false;
 
     public Turret(TalonSRXFactory.Configuration masterConfig, ClosedLoopConfig pidConfig,
@@ -38,7 +36,6 @@ public class Turret extends TalonSRXSubsystem {
             resetEncoder();
         }
     }
-
 
     @Override
     protected void resetEncoder() {
