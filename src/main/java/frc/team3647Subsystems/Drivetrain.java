@@ -23,7 +23,9 @@ import lib.wpi.Solenoid;
 import lib.wpi.Timer;
 
 
-
+/**
+ * driver boi
+ */
 public class Drivetrain implements PeriodicSubsystem {
 
     private static int constructCount = 0;
@@ -67,7 +69,7 @@ public class Drivetrain implements PeriodicSubsystem {
     public Drivetrain(Configuration leftMasterConfig, Configuration rightMasterConfig,
             Configuration leftSlaveConfig, Configuration rightSlaveConfig,
             ClosedLoopConfig leftMasterPIDConfig, ClosedLoopConfig rightMasterPIDConfig,
-            int leftShifterPin, int rightShifterPin, double kWheelDiameterMeters) {
+            int shifterPin, double kWheelDiameterMeters) {
         if (constructCount > 0) {
             throw new UnsupportedOperationException("Drivetrain was already initialized once");
         }
@@ -105,7 +107,7 @@ public class Drivetrain implements PeriodicSubsystem {
         /** Meters per second */
         public double rightVelocity;
 
-        public double ypr[] = new double[]{0, 0, 0};
+        public double ypr[] = new double[] {0, 0, 0};
 
         /** Meters */
         public double leftPosition;
@@ -230,8 +232,9 @@ public class Drivetrain implements PeriodicSubsystem {
     public void periodic() {
         PeriodicSubsystem.super.periodic();
         m_timeStamp = Timer.getFPGATimestamp();
-        m_odometry.update(Rotation2d.fromDegrees(getHeading()), periodicIO.leftPosition,
+        Pose2d pose = m_odometry.update(Rotation2d.fromDegrees(getHeading()), periodicIO.leftPosition,
                 periodicIO.rightPosition);
+                
     }
 
     @Override
@@ -330,21 +333,22 @@ public class Drivetrain implements PeriodicSubsystem {
         if (scaleInputs) {
             m_maxOutput = .7;
         }
-        // double currentLeftDesiredVelocity = MathUtil.clamp(leftMotorOutput, -1.0, 1.0) * m_maxOutput
-        //         * m_leftPIDConfig.maxVelocity;
+        // double currentLeftDesiredVelocity = MathUtil.clamp(leftMotorOutput, -1.0, 1.0) *
+        // m_maxOutput
+        // * m_leftPIDConfig.maxVelocity;
         // double currentRightDesiredVelocity = MathUtil.clamp(rightMotorOutput, -1.0, 1.0)
-        //         * m_maxOutput * m_rightPIDConfig.maxVelocity;
+        // * m_maxOutput * m_rightPIDConfig.maxVelocity;
 
         // double leftVoltage = feedforward.calculate(currentLeftDesiredVelocity,
-        //         (currentLeftDesiredVelocity - periodicIO.prevLeftDesiredVelocity) / kDt);
+        // (currentLeftDesiredVelocity - periodicIO.prevLeftDesiredVelocity) / kDt);
         // double rightVoltage = feedforward.calculate(currentRightDesiredVelocity,
-        //         (currentRightDesiredVelocity - periodicIO.prevRightDesiredVelocity) / kDt);
+        // (currentRightDesiredVelocity - periodicIO.prevRightDesiredVelocity) / kDt);
 
         // if (shifted) {
-        //     setOpenLoop(new DriveSignal(xSpeed, xSpeed));
+        // setOpenLoop(new DriveSignal(xSpeed, xSpeed));
         // } else {
-        //     setOpenLoop(new DriveSignal(leftVoltage / m_leftMasterConfig.nominalVoltage,
-        //             rightVoltage / m_rightMasterConfig.nominalVoltage));
+        // setOpenLoop(new DriveSignal(leftVoltage / m_leftMasterConfig.nominalVoltage,
+        // rightVoltage / m_rightMasterConfig.nominalVoltage));
         // }
 
         setOpenLoop(new DriveSignal(leftMotorOutput, rightMotorOutput));
@@ -487,7 +491,7 @@ public class Drivetrain implements PeriodicSubsystem {
      */
     public void zeroHeading() {
         // m_gyro.setYaw(0);
-        
+
     }
 
     public double getHeading() {

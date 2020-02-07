@@ -8,58 +8,46 @@
 package frc.team3647Subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
-
+import lib.drivers.TalonSRXFactory;
 import lib.drivers.VictorSPXFactory;
 import lib.wpi.Solenoid;
 
 /**
- * Add your docs here.
+ * Intake fuel cells from everywhere.
  */
 public class Intake implements PeriodicSubsystem {
 
-    private final Solenoid innerLeftPiston;
-    private final Solenoid innerRightPiston;
-    private final Solenoid outerLeftPiston;
-    private final Solenoid outerRightPiston;
+    // private final Solenoid innerPistons;
+    // private final Solenoid outerPistons;
 
-    private final VictorSPX intakeMotor;
+    private final TalonSRX intakeMotor;
 
-    public Intake(VictorSPXFactory.Configuration intakeMotorConfig, int leftPin1, int rightPin1, int leftPin2, int rightPin2) {
-        if(intakeMotorConfig == null) {
-            throw new IllegalArgumentException("Intake motor config was null");
+    public Intake(TalonSRXFactory.Configuration intakeMotorConfig, int innerPistonsPin,
+            int outerPistonsPin) {
+        if (intakeMotorConfig == null) {
+            throw new NullPointerException("Intake motor config was null");
         }
-        intakeMotor = VictorSPXFactory.createVictor(intakeMotorConfig);
-        innerLeftPiston = new Solenoid(leftPin1);
-        innerRightPiston = new Solenoid(rightPin1);
-        outerLeftPiston = new Solenoid(leftPin2);
-        outerRightPiston = new Solenoid(rightPin2);
+        intakeMotor = TalonSRXFactory.createTalon(intakeMotorConfig);
+        // innerPistons = new Solenoid(innerPistonsPin);
+        // outerPistons = new Solenoid(outerPistonsPin);
     }
 
     public void extendOuter() {
-        setOuterPistons(false);
+        // outerPistons.set(false);
     }
 
     public void retractOuter() {
-        setOuterPistons(false);
+        // outerPistons.set(false);
     }
 
     public void extendInner() {
-        setInnerPistons(true);
+        // innerPistons.set(true);
     }
 
     public void retractInner() {
-        setInnerPistons(false);
-    }
-
-    private void setInnerPistons(boolean on) {
-        innerLeftPiston.set(on);
-        innerRightPiston.set(on);
-    }
-
-    private void setOuterPistons(boolean on) {
-        outerLeftPiston.set(on);
-        outerRightPiston.set(on);
+        // innerPistons.set(false);
     }
 
     private void setOpenLoop(double demand) {
@@ -72,6 +60,11 @@ public class Intake implements PeriodicSubsystem {
 
     public void spitOut(double demand) {
         setOpenLoop(demand);
+    }
+
+    @Override
+    public void end() {
+        setOpenLoop(0);
     }
 
     @Override

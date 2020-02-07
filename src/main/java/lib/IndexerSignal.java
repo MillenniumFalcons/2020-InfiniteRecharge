@@ -15,6 +15,11 @@ public class IndexerSignal {
     private final double tunnelOutput;
     private final double rollersOutput;
 
+    public static IndexerSignal STOP = new IndexerSignal(0, 0, 0);
+    public static IndexerSignal GO = new IndexerSignal(1, .4, .4);
+    public static IndexerSignal TUNNELBACK = new IndexerSignal(0, -.3, 0);
+    public static IndexerSignal TUNNELFORWARDS = new IndexerSignal(0, .4, 0);
+
     public IndexerSignal(double funnelOutput, double tunnelOutput, double rollersOutput) {
         this.funnelOutput = funnelOutput;
         this.tunnelOutput = tunnelOutput;
@@ -29,7 +34,7 @@ public class IndexerSignal {
         return this.tunnelOutput;
     }
 
-    public double getrollerOutput() {
+    public double getRollersOutput() {
         return this.rollersOutput;
     }
 }

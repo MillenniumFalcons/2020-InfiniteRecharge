@@ -27,24 +27,26 @@ public class TalonSRXFactory {
         public NeutralMode neutralMode = NeutralMode.Coast;
         public boolean voltageCompensation = false;
         public double nominalVoltage = 0.0;
+        public double maxOutput = 1;
+        public double minOutput = -1;
 
-        private Configuration(int CANID, boolean inverted) {
+        public Configuration(int CANID, boolean inverted) {
             this.CANID = CANID;
             this.inverted = inverted;
         }
 
-        public Configuration currentLimiting(int peakCurrent, int peakCurrentDuration,
-                int continuousCurrent) {
-            enableCurrentLimiting = true;
+        public Configuration currentLimiting(boolean enable, int peakCurrent,
+                int peakCurrentDuration, int continuousCurrent) {
+            enableCurrentLimiting = enable;
             this.peakCurrent = peakCurrent;
             this.peakCurrentDuration = peakCurrentDuration;
             this.continuousCurrent = continuousCurrent;
             return this;
         }
 
-        public Configuration voltageCompensation(double nominalVoltage) {
+        public Configuration voltageCompensation(boolean enable, double nominalVoltage) {
             this.nominalVoltage = nominalVoltage;
-            this.voltageCompensation = true;
+            this.voltageCompensation = enable;
             return this;
         }
 
@@ -52,6 +54,37 @@ public class TalonSRXFactory {
             this.neutralMode = mode;
             return this;
         }
+
+        /**
+         * @param maxOuput is [0, 1]
+         */
+        public Configuration configMaxOutput(double maxOutput) {
+            if (maxOutput < 1 && maxOutput > 0) {
+                this.maxOutput = maxOutput;
+            }
+            return this;
+        }
+
+        /**
+         * @param minOutpu is [-1, 0]
+         */
+        public Configuration configMaxReverseOutput(double minOutput) {
+            if (minOutput < 0 && minOutput > -1) {
+                this.minOutput = minOutput;
+            }
+            return this;
+        }
+
+        public static Configuration mirrorWithCANID(Configuration config, int CANID) {
+
+            return new Configuration(CANID, config.inverted)
+                    .currentLimiting(config.enableCurrentLimiting, config.peakCurrent,
+                            config.peakCurrentDuration, config.continuousCurrent)
+                    .voltageCompensation(config.voltageCompensation, config.nominalVoltage)
+                    .neutralMode(config.neutralMode).configMaxOutput(config.maxOutput)
+                    .configMaxReverseOutput(config.minOutput);
+        }
+
     }
 
     private static final Configuration DEFAULT = new Configuration(0, false);
@@ -83,9 +116,15 @@ public class TalonSRXFactory {
         handleCANError(config.CANID, talon.configContinuousCurrentLimit(config.continuousCurrent),
                 "set continuous current");
 
+        talon.enableVoltageCompensation(config.voltageCompensation);
         handleCANError(config.CANID, talon.configVoltageCompSaturation(config.nominalVoltage),
                 "set nominal voltage");
-        talon.enableVoltageCompensation(config.voltageCompensation);
+
+        handleCANError(config.CANID, talon.configPeakOutputForward(config.maxOutput),
+                "set max forward output");
+
+        handleCANError(config.CANID, talon.configPeakOutputReverse(config.minOutput),
+                "set max reverse output");
         return talon;
     }
 }

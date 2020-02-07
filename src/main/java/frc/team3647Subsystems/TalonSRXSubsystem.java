@@ -67,14 +67,22 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
 
     @Override
     public void readPeriodicInputs() {
-        periodicIO.position = master.getSelectedSensorPosition() * m_pidConfig.kEncoderTicksToUnits;
-        periodicIO.velocity = master.getSelectedSensorVelocity() * m_pidConfig.kEncoderVelocityToRPM;
+        // periodicIO.position = master.getSelectedSensorPosition() *
+        // m_pidConfig.kEncoderTicksToUnits;
+        // periodicIO.velocity =
+        // master.getSelectedSensorVelocity() * m_pidConfig.kEncoderVelocityToRPM;
     }
 
     @Override
     public void writePeriodicOutputs() {
+        System.out.println("demand for " + getName() + " is " + periodicIO.demand);
         master.set(controlMode, periodicIO.demand, DemandType.ArbitraryFeedForward,
                 periodicIO.feedforward / 12.0);
+    }
+
+    @Override
+    public void periodic() {
+        writePeriodicOutputs();
     }
 
     @Override
@@ -89,6 +97,14 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
     protected void setEncoderPosition(double newPosition) {
         TalonSRXUtil.checkError(master.setSelectedSensorPosition((int) newPosition),
                 "couldn't change encoder value on " + getName() + "'s' sparkmax");
+    }
+
+    protected void setEncoderPositionUnits(double newPositionUnits) {
+        setEncoderPosition(newPositionUnits / m_pidConfig.kEncoderTicksToUnits);
+    }
+
+    protected void resetEncoder() {
+        setEncoderPosition(0);
     }
 
     /**
@@ -136,6 +152,25 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
                 && position > getPosition() - m_pidConfig.positionThreshold;
     }
 
+    public boolean reachedTargetPosition() {
+        if (controlMode == ControlMode.Position || controlMode == ControlMode.MotionMagic) {
+            return reachedPosition(periodicIO.demand);
+        }
+        return false;
+    }
+
+    protected boolean reachedVelocity(double velocity) {
+        return velocity < getVelocity() + m_pidConfig.velocityThreshold
+                && velocity > getVelocity() - m_pidConfig.velocityThreshold;
+    }
+
+    public boolean reachedTargetVelocity() {
+        if (controlMode == ControlMode.Velocity) {
+            return reachedVelocity(getVelocity());
+        }
+        return false;
+    }
+
     public double getPosition() {
         return periodicIO.position;
     }
@@ -168,9 +203,11 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
     protected void addFollower(BaseMotorController follower, boolean isInvertedFromMaster) {
         follower.follow(master);
         InvertType invertType = InvertType.FollowMaster;
-        if(isInvertedFromMaster) {
+        if (isInvertedFromMaster) {
             invertType = InvertType.InvertMotorOutput;
         }
         follower.setInverted(invertType);
     }
+
+
 }

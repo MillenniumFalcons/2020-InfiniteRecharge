@@ -8,22 +8,28 @@
 package frc.team3647Subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+import edu.wpi.first.wpilibj.DigitalInput;
 import lib.IndexerSignal;
+import lib.drivers.TalonSRXFactory;
 import lib.drivers.VictorSPXFactory;
 import lib.wpi.HALMethods;
 
 /**
- * Add your docs here.
+ * feeder boi.
  */
 public class Indexer implements PeriodicSubsystem {
 
     private final VictorSPX funnel;
-    private final VictorSPX tunnel;
+    private final TalonSRX tunnel;
     private final VictorSPX rollers;
+    private final DigitalInput bannerSensor;
+    private boolean bannerSensorValue;
 
-    public Indexer(VictorSPXFactory.Configuration funnelConfig, VictorSPXFactory.Configuration tunnelConfig,
-            VictorSPXFactory.Configuration rollersConfig) {
+    public Indexer(VictorSPXFactory.Configuration funnelConfig,
+            TalonSRXFactory.Configuration tunnelConfig,
+            VictorSPXFactory.Configuration rollersConfig, int bannerSensorPin) {
         boolean error = false;
         if (funnelConfig == null) {
             HALMethods.sendDSError("funnel config was null");
@@ -39,12 +45,15 @@ public class Indexer implements PeriodicSubsystem {
         }
 
         if (error) {
-            throw new IllegalArgumentException("1 or more of the arguments to Indexer constructor were null");
+            throw new NullPointerException(
+                    "1 or more of the arguments to Indexer constructor were null");
         } else {
             funnel = VictorSPXFactory.createVictor(funnelConfig);
-            tunnel = VictorSPXFactory.createVictor(tunnelConfig);
+            tunnel = TalonSRXFactory.createTalon(tunnelConfig);
             rollers = VictorSPXFactory.createVictor(rollersConfig);
         }
+
+        bannerSensor = new DigitalInput(bannerSensorPin);
     }
 
     public void set(IndexerSignal signal) {
@@ -52,9 +61,24 @@ public class Indexer implements PeriodicSubsystem {
             HALMethods.sendDSError("Indexer signal was null!");
             return;
         }
+        System.out.println("funnel requested Out: " + signal.getFunnelOutput());
         funnel.set(ControlMode.PercentOutput, signal.getFunnelOutput());
         tunnel.set(ControlMode.PercentOutput, signal.getTunnelOutput());
-        rollers.set(ControlMode.PercentOutput, signal.getrollerOutput());
+        rollers.set(ControlMode.PercentOutput, signal.getRollersOutput());
+    }
+
+    @Override
+    public void periodic() {
+        bannerSensorValue = bannerSensor.get();
+    }
+
+    public boolean getBannerSensorValue() {
+        return bannerSensorValue;
+    }
+
+    @Override
+    public void end() {
+        set(IndexerSignal.STOP);
     }
 
     @Override

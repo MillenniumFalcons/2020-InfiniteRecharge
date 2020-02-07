@@ -82,7 +82,7 @@ public class Joysticks {
     }
 
     public double getRightStickY() {
-        return applyDeadband(-controller.getRawAxis(XboxController.Axis.kRightX.value));
+        return applyDeadband(-controller.getRawAxis(XboxController.Axis.kRightY.value));
     }
 
     /**

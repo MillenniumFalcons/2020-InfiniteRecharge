@@ -7,31 +7,27 @@
 
 package frc.team3647Subsystems;
 
-import com.revrobotics.CANSparkMax;
-import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
-import lib.drivers.SparkMaxFactory;
+import lib.drivers.ClosedLoopFactory;
+import lib.drivers.TalonSRXFactory;
 
 /**
- * Shoots ball.
+ * spinny up.
  */
-public class Flywheel extends SparkMaxSubsystem {
+public class KickerWheel extends TalonSRXSubsystem {
 
-    private CANSparkMax follower;
-
-    public Flywheel(SparkMaxFactory.Configuration masterConfig,
-            SparkMaxFactory.Configuration followerConfig,
-            ClosedLoopConfig pidConfig) {
+    public KickerWheel(TalonSRXFactory.Configuration masterConfig,
+            ClosedLoopFactory.ClosedLoopConfig pidConfig) {
         super(masterConfig, pidConfig);
-        follower = addFollower(followerConfig, true);
     }
 
     public void setRPM(double RPM) {
         setVelocity(RPM);
     }
 
-
     @Override
     public String getName() {
-        return "Flywheel";
+        return "KickerWheel";
     }
+
+
 }

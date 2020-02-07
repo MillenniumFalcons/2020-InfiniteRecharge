@@ -30,6 +30,7 @@ public class ClosedLoopFactory {
         public double maxAcceleration;
         public double positionThreshold;
         public double velocityThreshold;
+        public boolean sensorInverted;
 
         public ClosedLoopConfig() {
             kEncoderAccelerationToUnits = 1;
@@ -45,12 +46,13 @@ public class ClosedLoopFactory {
             maxAcceleration = 0;
             positionThreshold = 0;
             velocityThreshold = 0;
+            sensorInverted = false;
         }
 
         public ClosedLoopConfig(double kEncoderAccelerationToUnits, double kEncoderVelocityToRPM,
-                double kEncoderTicksToUnits, double kP, double kI, double kD, double kS, double kV, double kA,
-                double[] feedForwardArr, double maxVelocity, double maxAcceleration, double positionThreshold,
-                double velocityThreshold) {
+                double kEncoderTicksToUnits, double kP, double kI, double kD, double kS, double kV,
+                double kA, double[] feedForwardArr, double maxVelocity, double maxAcceleration,
+                double positionThreshold, double velocityThreshold, boolean sensorInverted) {
             this.kEncoderAccelerationToUnits = kEncoderAccelerationToUnits;
             this.kEncoderVelocityToRPM = kEncoderVelocityToRPM;
             this.kEncoderTicksToUnits = kEncoderTicksToUnits;
@@ -64,6 +66,7 @@ public class ClosedLoopFactory {
             this.maxAcceleration = maxAcceleration;
             this.positionThreshold = positionThreshold;
             this.velocityThreshold = velocityThreshold;
+            this.sensorInverted = sensorInverted;
         }
 
         public ClosedLoopConfig positionThreshold(double positionThreshld) {
@@ -114,19 +117,24 @@ public class ClosedLoopFactory {
             this.kEncoderTicksToUnits = encoderTicksToUnits;
             return this;
         }
+
+        public ClosedLoopConfig sensorInverted(boolean sensorInverted) {
+            this.sensorInverted = sensorInverted;
+            return this;
+        }
     }
 
     public static ClosedLoopConfig DEFAULT = new ClosedLoopConfig();
 
     private static void handleCANError(int id, CANError error, String message) {
         if (error != CANError.kOk) {
-            DriverStation.reportError(
-                    "Could not configure spark id: " + id + " error: " + error.toString() + " " + message, false);
+            DriverStation.reportError("Could not configure spark id: " + id + " error: "
+                    + error.toString() + " " + message, false);
         }
     }
 
-    public static CANPIDController createSparkMaxPIDController(CANSparkMax master, CANEncoder feedbackDevice,
-            ClosedLoopConfig config, int slot) {
+    public static CANPIDController createSparkMaxPIDController(CANSparkMax master,
+            CANEncoder feedbackDevice, ClosedLoopConfig config, int slot) {
         CANPIDController controller = master.getPIDController();
         configSparkMaxPIDController(controller, master, feedbackDevice, config, slot);
         return controller;
@@ -137,11 +145,14 @@ public class ClosedLoopFactory {
         int id = master.getDeviceId();
         double maxVelocityTicks = config.maxVelocity / config.kEncoderVelocityToRPM;
         double maxAccelerationTicks = config.maxVelocity / config.kEncoderAccelerationToUnits;
+
         handleCANError(id, controller.setP(config.kP, slot), "set P");
         handleCANError(id, controller.setI(config.kI, slot), "set I");
         handleCANError(id, controller.setD(config.kD, slot), "set D");
-        handleCANError(id, controller.setSmartMotionMaxAccel(maxAccelerationTicks, slot), "set smart motion accel");
-        handleCANError(id, controller.setSmartMotionMaxVelocity(maxVelocityTicks, slot), "set smart motion max vel");
+        handleCANError(id, controller.setSmartMotionMaxAccel(maxAccelerationTicks, slot),
+                "set smart motion accel");
+        handleCANError(id, controller.setSmartMotionMaxVelocity(maxVelocityTicks, slot),
+                "set smart motion max vel");
         handleCANError(id, controller.setSmartMotionMinOutputVelocity(-maxVelocityTicks, slot),
                 "set smart motion min vel");
         handleCANError(id, controller.setFeedbackDevice(feedbackDevice), "set feedback device");
@@ -149,22 +160,25 @@ public class ClosedLoopFactory {
 
     private static void handleCANError(int id, ErrorCode error, String message) {
         if (error != ErrorCode.OK) {
-            DriverStation.reportError(
-                    "Could not configure talon id: " + id + " error: " + error.toString() + " " + message, false);
+            DriverStation.reportError("Could not configure talon id: " + id + " error: "
+                    + error.toString() + " " + message, false);
         }
     }
 
-    public static void configTalonPIDController(TalonSRX talon, FeedbackDevice feedbackDevice, ClosedLoopConfig config,
-            int slot) {
+    public static void configTalonPIDController(TalonSRX talon, FeedbackDevice feedbackDevice,
+            ClosedLoopConfig config, int slot) {
         int id = talon.getDeviceID();
         int maxVelocityTicks = (int) (config.maxVelocity / config.kEncoderVelocityToRPM);
         int maxAccelerationTicks = (int) (config.maxVelocity / config.kEncoderAccelerationToUnits);
         handleCANError(id, talon.config_kP(slot, config.kP), "set kP");
         handleCANError(id, talon.config_kI(slot, config.kI), "set kI");
         handleCANError(id, talon.config_kD(slot, config.kD), "set kD");
-        handleCANError(id, talon.configMotionAcceleration(maxAccelerationTicks), "set acceleration");
+        handleCANError(id, talon.configMotionAcceleration(maxAccelerationTicks),
+                "set acceleration");
         handleCANError(id, talon.configMotionCruiseVelocity(maxVelocityTicks), "set velocity");
-        handleCANError(id, talon.configSelectedFeedbackSensor(feedbackDevice, slot, 0), "config feedback device");
+        handleCANError(id, talon.configSelectedFeedbackSensor(feedbackDevice, slot, 0),
+                "config feedback device");
+        talon.setSensorPhase(config.sensorInverted);
 
     }
 }

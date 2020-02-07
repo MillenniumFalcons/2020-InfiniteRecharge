@@ -49,26 +49,29 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
             error = true;
         }
 
-        if(error) {
+        if (error) {
             throw new IllegalArgumentException("either master config or pid config were null");
         }
         m_masterConfig = masterConfig;
         m_pidConfig = pidConfig;
         master = SparkMaxFactory.createSparkMax(m_masterConfig);
-        encoder = master.getEncoder();
-        pidController = ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
+        encoder = new CANEncoder(master);
+        pidController =
+                ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
     }
 
     @Override
     public void init() {
         try {
             setToBrake();
-            ClosedLoopFactory.configSparkMaxPIDController(pidController, master, encoder, m_pidConfig, 0);
+            ClosedLoopFactory.configSparkMaxPIDController(pidController, master, encoder,
+                    m_pidConfig, 0);
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
             master = SparkMaxFactory.createSparkMax(m_masterConfig);
             encoder = master.getEncoder();
-            pidController = ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
+            pidController =
+                    ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
         }
     }
 
@@ -131,6 +134,25 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
                 && position > getPosition() - m_pidConfig.positionThreshold;
     }
 
+    public boolean getTargetPosition() {
+        if (controlType == ControlType.kPosition || controlType == ControlType.kSmartMotion) {
+            return reachedPosition(periodicIO.demand);
+        }
+        return false;
+    }
+
+    protected boolean reachedVelocity(double velocity) {
+        return velocity < getVelocity() + m_pidConfig.velocityThreshold
+                && velocity > getVelocity() - m_pidConfig.velocityThreshold;
+    }
+
+    public boolean reachedTargetVelocity() {
+        if (controlType == ControlType.kVelocity) {
+            return reachedVelocity(getVelocity());
+        }
+        return false;
+    }
+
     public void setToCoast() {
         try {
             SparkMaxUtil.checkError(master.setIdleMode(IdleMode.kCoast),
@@ -155,8 +177,10 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
         pidController.setReference(demand, controlType, 0, feedForward);
     }
 
-    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config, boolean isInvertedFromMaster) {
-        CANSparkMax follower = SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
+    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config,
+            boolean isInvertedFromMaster) {
+        CANSparkMax follower =
+                SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
         follower.follow(master, isInvertedFromMaster);
         return follower;
     }
