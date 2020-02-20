@@ -13,15 +13,15 @@ import frc.team3647Subsystems.Intake;
 
 public class GroundIntake extends CommandBase {
     private final Intake m_intake;
-    private final DoubleSupplier m_demand;
+    private final DoubleSupplier drivetrainDemand;
 
     /**
      * Creates a new GroundIntake.
      */
-    public GroundIntake(Intake intake, DoubleSupplier demand) {
+    public GroundIntake(Intake intake, DoubleSupplier drivetrainDemand) {
         // Use addRequirements() here to declare subsystem dependencies.
-        m_demand = demand;
         m_intake = intake;
+        this.drivetrainDemand = drivetrainDemand;
         addRequirements(m_intake);
     }
 
@@ -35,15 +35,15 @@ public class GroundIntake extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_intake.intake(m_demand.getAsDouble());
+        m_intake.extendOuter();
+        m_intake.extendInner();
+        m_intake.intake(.7 + Math.abs(drivetrainDemand.getAsDouble()) * .7);
     }
 
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        // m_intake.retractInner();
-        // m_intake.retractOuter();
-        // m_intake.end();
+
     }
 
     // Returns true when the command should end.

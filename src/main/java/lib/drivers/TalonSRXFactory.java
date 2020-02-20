@@ -30,6 +30,8 @@ public class TalonSRXFactory {
         public double maxOutput = 1;
         public double minOutput = -1;
 
+        public double secondsFromNeutralToFull = 0;
+
         public Configuration(int CANID, boolean inverted) {
             this.CANID = CANID;
             this.inverted = inverted;
@@ -75,6 +77,11 @@ public class TalonSRXFactory {
             return this;
         }
 
+        public Configuration configOpenLoopRampRate(double secondsFromNeutralToFull) {
+            this.secondsFromNeutralToFull = secondsFromNeutralToFull;
+            return this;
+        }
+
         public static Configuration mirrorWithCANID(Configuration config, int CANID) {
 
             return new Configuration(CANID, config.inverted)
@@ -105,6 +112,7 @@ public class TalonSRXFactory {
     public static TalonSRX createTalon(Configuration config) {
         TalonSRX talon = new TalonSRX(config.CANID);
         talon.set(ControlMode.PercentOutput, 0.0);
+        talon.setInverted(config.inverted);
         handleCANError(config.CANID, talon.configFactoryDefault(), "restore factory defaults");
         talon.clearStickyFaults(kTimeoutMs);
 
@@ -125,6 +133,8 @@ public class TalonSRXFactory {
 
         handleCANError(config.CANID, talon.configPeakOutputReverse(config.minOutput),
                 "set max reverse output");
+
+        handleCANError(config.CANID, talon.configOpenloopRamp(config.secondsFromNeutralToFull), "config open loop ramp rate");
         return talon;
     }
 }

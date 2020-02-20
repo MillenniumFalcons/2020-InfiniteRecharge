@@ -7,7 +7,9 @@
 
 package frc.Commands;
 
+
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.team3647Subsystems.Indexer;
 import frc.team3647Subsystems.Intake;
 import frc.team3647Subsystems.KickerWheel;
@@ -22,7 +24,8 @@ public class StowIntakeAndOrganizeFeeder extends ParallelCommandGroup {
     public StowIntakeAndOrganizeFeeder(Intake intake, Indexer indexer, KickerWheel kickerWheel) {
         // Add your commands in the super() call, e.g.
         // super(new FooCommand(), new BarCommand());super();
-        super(new StowIntakeFromGround(intake), new RunIntakeRoller(intake, .3).withTimeout(3),
+        super(new SequentialCommandGroup(new StowOuterPistons(intake).withTimeout(.3),
+                new RunIntakeRoller(intake, .3).withTimeout(.5)),
                 new OrganizeFeeder(indexer, kickerWheel).withTimeout(3));
     }
 }

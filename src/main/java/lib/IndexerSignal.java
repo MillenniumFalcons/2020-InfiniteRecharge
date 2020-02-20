@@ -16,9 +16,13 @@ public class IndexerSignal {
     private final double rollersOutput;
 
     public static IndexerSignal STOP = new IndexerSignal(0, 0, 0);
-    public static IndexerSignal GO = new IndexerSignal(1, .4, .4);
-    public static IndexerSignal TUNNELBACK = new IndexerSignal(0, -.3, 0);
-    public static IndexerSignal TUNNELFORWARDS = new IndexerSignal(0, .4, 0);
+    public static IndexerSignal GO = new IndexerSignal(1, .7, .4);
+    public static IndexerSignal INDEXERBACK = new IndexerSignal(.7, -.7, -.3);
+    public static IndexerSignal INDEXERFORWARDS = new IndexerSignal(1, .5, .5);
+    public static IndexerSignal SPITOUT = new IndexerSignal(-1, -1, -1);
+    public static IndexerSignal TUNNELBACK_HOTDOGFWD= new IndexerSignal(.7, -.7, .7);
+    public static IndexerSignal TUNNELHOLD_GO = new IndexerSignal(.7, 0, .5);
+    public static IndexerSignal GO_SLOW = new IndexerSignal(1, .4, .4);
 
     public IndexerSignal(double funnelOutput, double tunnelOutput, double rollersOutput) {
         this.funnelOutput = funnelOutput;

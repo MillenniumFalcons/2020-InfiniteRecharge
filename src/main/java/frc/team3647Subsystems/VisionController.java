@@ -10,6 +10,7 @@ package frc.team3647Subsystems;
 import java.util.Objects;
 import frc.team3647inputs.Limelight;
 import frc.team3647inputs.Limelight.Data;
+import lib.team3647Utils.RollingAverage;
 import lib.team3647Utils.VisionTarget;
 import lib.wpi.HALMethods;
 
@@ -22,11 +23,13 @@ public class VisionController implements PeriodicSubsystem {
         public final double kGoalHeight;
         public final double kCameraHeight;
         public final double kCameraAngle;
+        public final double kImageCaptureLatency;
 
-        public CamConstants(double goalHeight, double cameraHeight, double cameraAngle) {
+        public CamConstants(double goalHeight, double cameraHeight, double cameraAngle, double imageCaptureLatency) {
             this.kGoalHeight = goalHeight;
             this.kCameraHeight = cameraHeight;
             this.kCameraAngle = cameraAngle;
+            kImageCaptureLatency = imageCaptureLatency;
         }
     }
 
@@ -50,6 +53,12 @@ public class VisionController implements PeriodicSubsystem {
     private boolean outputsHaveChanged = false;
     private PeriodicIO periodicIO = new PeriodicIO();
 
+    private RollingAverage xAverage = new RollingAverage();
+    private RollingAverage yAverage = new RollingAverage();
+    private RollingAverage areaAverage = new RollingAverage();
+    private RollingAverage skewAverage = new RollingAverage();
+    private RollingAverage rangeAverage = new RollingAverage();
+
     public VisionController(String camIP, CamConstants constants) {
         Objects.requireNonNull(camIP);
         Objects.requireNonNull(constants);
@@ -61,12 +70,23 @@ public class VisionController implements PeriodicSubsystem {
     @Override
     public void readPeriodicInputs() {
         periodicIO.validTarget = (int) limelight.get(Data.VALID_TARGET) == 1;
+
         periodicIO.x = limelight.get(Data.X);
+        xAverage.add(periodicIO.x);
+
         periodicIO.y = limelight.get(Data.Y);
+        yAverage.add(periodicIO.y);
+
         periodicIO.area = limelight.get(Data.AREA);
+        areaAverage.add(periodicIO.area);
+
         periodicIO.skew = limelight.get(Data.SKEW);
-        periodicIO.latency = limelight.get(Data.LATNECY);
-        periodicIO.range = calculateRange(periodicIO.y);
+        skewAverage.add(periodicIO.skew);
+
+        periodicIO.latency = limelight.get(Data.LATNECY) + m_constants.kImageCaptureLatency;
+
+        periodicIO.range = calculateRange(getFilteredPitch());
+        rangeAverage.add(periodicIO.range);
     }
 
     @Override
@@ -82,23 +102,36 @@ public class VisionController implements PeriodicSubsystem {
 
     @Override
     public void periodic() {
-
+        readPeriodicInputs();
+        writePeriodicOutputs();
     }
 
     public double getDistance() {
-        return latestTarget.getDistance();
+        return periodicIO.range;
+    }
+
+    public double getFilteredDistance() {
+        return rangeAverage.getAverage();
     }
 
     public double getYaw() {
-        return latestTarget.getX();
+        return periodicIO.x;
+    }
+
+    public double getFilteredYaw() {
+        return xAverage.getAverage();
     }
 
     public boolean isValid() {
-        return latestTarget.getValid() == 1;
+        return periodicIO.validTarget;
     }
 
     public double getPitch() {
-        return latestTarget.getY();
+        return periodicIO.y;
+    }
+
+    public double getFilteredPitch() {
+        return yAverage.getAverage();
     }
 
     private double calculateRange(double yDegrees) {

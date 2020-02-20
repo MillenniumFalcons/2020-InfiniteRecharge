@@ -9,44 +9,54 @@ package frc.Commands;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.team3647Subsystems.Indexer;
+import frc.team3647Subsystems.Intake;
 import frc.team3647Subsystems.KickerWheel;
 import lib.IndexerSignal;
 
-public class RollTunnelBack extends CommandBase {
-
-    private final Indexer m_indexer;
+public class RemoveBalls extends CommandBase {
     private final KickerWheel m_kickerWheel;
+    private final Intake m_intake;
+    private final Indexer m_indexer;
   /**
-   * Creates a new RollIndexerBack.
+   * Creates a new RemoveBalls.
    */
-  public RollTunnelBack(Indexer indexer, KickerWheel kickerWheel) {
-      m_indexer = indexer;
+  public RemoveBalls(Indexer indexer, Intake intake, KickerWheel kickerWheel) {
       m_kickerWheel = kickerWheel;
-      addRequirements(m_indexer);
+      m_intake = intake;
+      m_indexer = indexer;
+      addRequirements(m_kickerWheel, m_intake, m_indexer);
+    // Use addRequirements() here to declare subsystem dependencies.
   }
 
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
+      m_intake.retractInner();
+      m_intake.extendOuter();
+
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-      m_indexer.set(IndexerSignal.INDEXERBACK);
+      m_intake.spitOut(1);
+      m_indexer.set(IndexerSignal.SPITOUT);
       m_kickerWheel.setOpenloop(-.7);
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-      m_indexer.set(IndexerSignal.STOP);
-      m_kickerWheel.end();
+    m_intake.end();
+    m_indexer.end();
+    m_kickerWheel.end();
+    m_intake.retractOuter();
+    m_intake.extendInner();
   }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return !m_indexer.getBannerSensorValue();
+    return false;
   }
 }

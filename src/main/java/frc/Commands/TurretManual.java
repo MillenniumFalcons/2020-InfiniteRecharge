@@ -7,20 +7,22 @@
 
 package frc.Commands;
 
+import java.util.function.DoubleSupplier;
+
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.team3647Subsystems.Turret;
 
-public class TurretMotionMagic extends CommandBase {
+public class TurretManual extends CommandBase {
     private final Turret m_turret;
-    private final double kAngle;
+    private final DoubleSupplier m_demand;
   /**
-   * Creates a new TurretGoTo.
+   * Creates a new TurretManual.
    */
-  public TurretMotionMagic(Turret turret, double angle) {
+  public TurretManual(Turret turret, DoubleSupplier demand) {
+      m_turret = turret;
+      m_demand = demand;
+      addRequirements(m_turret);
     // Use addRequirements() here to declare subsystem dependencies.
-    m_turret = turret;
-    kAngle = angle;
-    addRequirements(m_turret);
   }
 
   // Called when the command is initially scheduled.
@@ -31,18 +33,17 @@ public class TurretMotionMagic extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-      m_turret.setAngle(kAngle);
+      m_turret.setOpenloop(m_demand.getAsDouble() * .5);
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-      m_turret.end();
   }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return m_turret.reachedTargetPosition();
+    return false;
   }
 }

@@ -1,29 +1,32 @@
 package lib;
 
 import java.util.ArrayList;
-import java.util.function.Consumer;
+import java.util.function.DoubleSupplier;
 
-public class GroupPrinter {
-    private static GroupPrinter INSTANCE = new GroupPrinter();
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 
-    public GroupPrinter getInstance() {
+public class GroupPrinter implements Subsystem {
+    private final static GroupPrinter INSTANCE = new GroupPrinter();
+
+    public static GroupPrinter getInstance() {
         return INSTANCE;
     }
-    ArrayList<String> toPrint = new ArrayList<>();
 
+    ArrayList<DoubleSupplier> toPrint = new ArrayList<>();
+    ArrayList<String> keys = new ArrayList<>();
 
-    public synchronized void addEntry(double timeStamp, String str) {
-        if(str != null) {
-            toPrint.add(timeStamp + ": " + str);
-        } else {
-            toPrint.add(timeStamp + ": String was null!");
+    public synchronized void addDouble(String key, DoubleSupplier function) {
+        if (key != null && function != null) {
+            toPrint.add(function);
+            keys.add(key);
         }
     }
 
-    public synchronized void print(Consumer<String> print) {
-        for (String str : toPrint) {
-            print.accept(str);
+    @Override
+    public void periodic() {
+        for (int i = 0; i < toPrint.size() && i < keys.size(); i++) {
+            SmartDashboard.putNumber(keys.get(i), toPrint.get(i).getAsDouble());
         }
-        toPrint.clear();
     }
 }

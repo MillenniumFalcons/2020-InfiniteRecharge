@@ -11,6 +11,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import lib.IndexerSignal;
 import lib.drivers.TalonSRXFactory;
 import lib.drivers.VictorSPXFactory;
@@ -22,13 +23,13 @@ import lib.wpi.HALMethods;
 public class Indexer implements PeriodicSubsystem {
 
     private final VictorSPX funnel;
-    private final TalonSRX tunnel;
+    private final VictorSPX tunnel;
     private final VictorSPX rollers;
     private final DigitalInput bannerSensor;
     private boolean bannerSensorValue;
 
     public Indexer(VictorSPXFactory.Configuration funnelConfig,
-            TalonSRXFactory.Configuration tunnelConfig,
+            VictorSPXFactory.Configuration tunnelConfig,
             VictorSPXFactory.Configuration rollersConfig, int bannerSensorPin) {
         boolean error = false;
         if (funnelConfig == null) {
@@ -49,7 +50,7 @@ public class Indexer implements PeriodicSubsystem {
                     "1 or more of the arguments to Indexer constructor were null");
         } else {
             funnel = VictorSPXFactory.createVictor(funnelConfig);
-            tunnel = TalonSRXFactory.createTalon(tunnelConfig);
+            tunnel = VictorSPXFactory.createVictor(tunnelConfig);
             rollers = VictorSPXFactory.createVictor(rollersConfig);
         }
 
@@ -61,7 +62,6 @@ public class Indexer implements PeriodicSubsystem {
             HALMethods.sendDSError("Indexer signal was null!");
             return;
         }
-        System.out.println("funnel requested Out: " + signal.getFunnelOutput());
         funnel.set(ControlMode.PercentOutput, signal.getFunnelOutput());
         tunnel.set(ControlMode.PercentOutput, signal.getTunnelOutput());
         rollers.set(ControlMode.PercentOutput, signal.getRollersOutput());
@@ -69,7 +69,7 @@ public class Indexer implements PeriodicSubsystem {
 
     @Override
     public void periodic() {
-        bannerSensorValue = bannerSensor.get();
+        bannerSensorValue = !bannerSensor.get();
     }
 
     public boolean getBannerSensorValue() {

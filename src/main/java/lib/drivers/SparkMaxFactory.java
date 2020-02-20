@@ -93,7 +93,6 @@ public class SparkMaxFactory {
             boolean isInvertedFromMaster) {
         CANSparkMax follower = new CANSparkMax(config.CANID, MotorType.kBrushless);
         handleCANError(config.CANID, follower.restoreFactoryDefaults(), "restore factory defaults");
-
         if (config.voltageCompensation) {
             if (config.voltageCompensation) {
                 handleCANError(config.CANID,

@@ -60,7 +60,7 @@ public class Limelight {
     // used to initalize the main, important things
     public Limelight(String ip) {
         // initializing the network table to grab values from limelight
-        table = NetworkTableInstance.getDefault().getTable(ip);
+        table = NetworkTableInstance.getDefault().getTable("limelight");
         this.ip = ip;
     }
 

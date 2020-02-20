@@ -44,55 +44,57 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
 
     private PeriodicIO periodicIO = new PeriodicIO();
 
-    protected TalonSRXSubsystem(TalonSRXFactory.Configuration masterConfig,
-            ClosedLoopConfig pidConfig) {
+    protected TalonSRXSubsystem(TalonSRXFactory.Configuration masterConfig, ClosedLoopConfig pidConfig) {
         m_masterConfig = masterConfig;
         m_pidConfig = pidConfig;
         master = TalonSRXFactory.createTalon(m_masterConfig);
-        ClosedLoopFactory.configTalonPIDController(master, FeedbackDevice.CTRE_MagEncoder_Relative,
-                pidConfig, 0);
+        ClosedLoopFactory.configTalonPIDController(master, FeedbackDevice.CTRE_MagEncoder_Relative, pidConfig, 0);
     }
 
     @Override
     public void init() {
         try {
             setToBrake();
+            reconfigTalonPID();
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
             master = TalonSRXFactory.createTalon(m_masterConfig);
-            ClosedLoopFactory.configTalonPIDController(master,
-                    FeedbackDevice.CTRE_MagEncoder_Relative, m_pidConfig, 0);
+            ClosedLoopFactory.configTalonPIDController(master, FeedbackDevice.CTRE_MagEncoder_Relative, m_pidConfig, 0);
         }
+    }
+
+    protected void reconfigTalonPID() {
+        ClosedLoopFactory.configTalonPIDController(master, FeedbackDevice.CTRE_MagEncoder_Relative, m_pidConfig, 0);
     }
 
     @Override
     public void readPeriodicInputs() {
-        // periodicIO.position = master.getSelectedSensorPosition() *
-        // m_pidConfig.kEncoderTicksToUnits;
-        // periodicIO.velocity =
-        // master.getSelectedSensorVelocity() * m_pidConfig.kEncoderVelocityToRPM;
+        periodicIO.position = master.getSelectedSensorPosition() * m_pidConfig.kEncoderTicksToUnits;
+        periodicIO.velocity = master.getSelectedSensorVelocity() * m_pidConfig.kEncoderVelocityToRPM;
     }
 
     @Override
     public void writePeriodicOutputs() {
-        System.out.println("demand for " + getName() + " is " + periodicIO.demand);
-        master.set(controlMode, periodicIO.demand, DemandType.ArbitraryFeedForward,
-                periodicIO.feedforward / 12.0);
+        master.set(controlMode, periodicIO.demand, DemandType.ArbitraryFeedForward, periodicIO.feedforward / 12.0);
     }
 
     @Override
     public void periodic() {
         writePeriodicOutputs();
+        readPeriodicInputs();
     }
 
     @Override
     public void end() {
         setOpenloop(0);
         periodicIO.feedforward = 0;
+        periodicIO.demand = 0;
+        controlMode = ControlMode.PercentOutput;
     }
 
     /**
-     * @param newPosition set the encoder the this position, physical position will not change
+     * @param newPosition set the encoder the this position, physical position will
+     *                    not change
      */
     protected void setEncoderPosition(double newPosition) {
         TalonSRXUtil.checkError(master.setSelectedSensorPosition((int) newPosition),
@@ -108,8 +110,8 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
     }
 
     /**
-     * change the physical position of the subsystem based on units. Will physically change where
-     * the subsystem is.
+     * change the physical position of the subsystem based on units. Will physically
+     * change where the subsystem is.
      * 
      * @param referencePt in real world units.
      */
@@ -121,8 +123,8 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
     /**
      * Will physically change where the subsystem is.
      * 
-     * @param referencePt the reference pt in units as determined by scaler passed in the
-     *                    constructor
+     * @param referencePt the reference pt in units as determined by scaler passed
+     *                    in the constructor
      */
     protected void setPositionMotionMagic(double referencePt) {
         periodicIO.demand = referencePt / m_pidConfig.kEncoderTicksToUnits;
@@ -194,8 +196,7 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
             master = TalonSRXFactory.createTalon(m_masterConfig);
-            ClosedLoopFactory.configTalonPIDController(master,
-                    FeedbackDevice.CTRE_MagEncoder_Relative, m_pidConfig, 0);
+            ClosedLoopFactory.configTalonPIDController(master, FeedbackDevice.CTRE_MagEncoder_Relative, m_pidConfig, 0);
         }
     }
 

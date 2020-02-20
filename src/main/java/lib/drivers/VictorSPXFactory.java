@@ -21,11 +21,13 @@ public class VictorSPXFactory {
         public boolean inverted;
         public double maxOutput;
         public double minOutput;
+        public double secondsFromNeutralToFull;
 
         public Configuration(int CANID) {
             this.CANID = CANID;
             inverted = false;
             maxOutput = 1;
+            minOutput = -1;
         }
 
         public Configuration setInverted(boolean inverted) {
@@ -53,6 +55,11 @@ public class VictorSPXFactory {
             }
             return this;
         }
+
+        public Configuration configOpenLoopRampRate(double secondsFromNeutralToFull) {
+            this.secondsFromNeutralToFull= secondsFromNeutralToFull;
+            return this;
+        }
     }
 
     private static void handleCANError(int id, ErrorCode error, String message) {
@@ -66,12 +73,13 @@ public class VictorSPXFactory {
         VictorSPX victor = new VictorSPX(config.CANID);
         victor.configFactoryDefault();
         victor.setInverted(config.inverted);
-        System.out.println("created victor id: " + config.CANID);
 
         handleCANError(config.CANID, victor.configPeakOutputForward(config.maxOutput),
                 "set max forward output");
         handleCANError(config.CANID, victor.configPeakOutputReverse(config.minOutput),
                 "set max reverse output");
+        handleCANError(config.CANID, victor.configOpenloopRamp(config.secondsFromNeutralToFull),
+                "config open loop ramp rate");
         return victor;
     }
 }

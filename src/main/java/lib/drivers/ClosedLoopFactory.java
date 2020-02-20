@@ -153,8 +153,6 @@ public class ClosedLoopFactory {
                 "set smart motion accel");
         handleCANError(id, controller.setSmartMotionMaxVelocity(maxVelocityTicks, slot),
                 "set smart motion max vel");
-        handleCANError(id, controller.setSmartMotionMinOutputVelocity(-maxVelocityTicks, slot),
-                "set smart motion min vel");
         handleCANError(id, controller.setFeedbackDevice(feedbackDevice), "set feedback device");
     }
 
@@ -168,6 +166,9 @@ public class ClosedLoopFactory {
     public static void configTalonPIDController(TalonSRX talon, FeedbackDevice feedbackDevice,
             ClosedLoopConfig config, int slot) {
         int id = talon.getDeviceID();
+        handleCANError(id, talon.configSelectedFeedbackSensor(feedbackDevice),
+                "config feedback device");
+                
         int maxVelocityTicks = (int) (config.maxVelocity / config.kEncoderVelocityToRPM);
         int maxAccelerationTicks = (int) (config.maxVelocity / config.kEncoderAccelerationToUnits);
         handleCANError(id, talon.config_kP(slot, config.kP), "set kP");
@@ -176,9 +177,6 @@ public class ClosedLoopFactory {
         handleCANError(id, talon.configMotionAcceleration(maxAccelerationTicks),
                 "set acceleration");
         handleCANError(id, talon.configMotionCruiseVelocity(maxVelocityTicks), "set velocity");
-        handleCANError(id, talon.configSelectedFeedbackSensor(feedbackDevice, slot, 0),
-                "config feedback device");
         talon.setSensorPhase(config.sensorInverted);
-
     }
 }

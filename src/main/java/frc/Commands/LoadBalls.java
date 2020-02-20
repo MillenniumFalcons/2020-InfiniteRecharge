@@ -33,15 +33,14 @@ public class LoadBalls extends CommandBase {
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
-    public void execute() {
-        m_indexer.set(IndexerSignal.GO);
-
+    public void execute() {        
         if(m_indexer.getBannerSensorValue()) {
-            m_kickerWheel.setOpenloop(-0.3);
+            m_kickerWheel.setOpenloop(-0.4);
+            m_indexer.set(IndexerSignal.GO_SLOW);
         } else {
+            m_indexer.set(IndexerSignal.GO);
             m_kickerWheel.end();
         }
-
     }
 
     // Called once the command ends or is interrupted.

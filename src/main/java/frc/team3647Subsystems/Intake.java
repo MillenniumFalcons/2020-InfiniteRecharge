@@ -19,10 +19,11 @@ import lib.wpi.Solenoid;
  */
 public class Intake implements PeriodicSubsystem {
 
-    // private final Solenoid innerPistons;
-    // private final Solenoid outerPistons;
+    private final Solenoid innerPistons;
+    private final Solenoid outerPistons;
 
     private final TalonSRX intakeMotor;
+    private boolean isInnerExtended = false;
 
     public Intake(TalonSRXFactory.Configuration intakeMotorConfig, int innerPistonsPin,
             int outerPistonsPin) {
@@ -30,24 +31,29 @@ public class Intake implements PeriodicSubsystem {
             throw new NullPointerException("Intake motor config was null");
         }
         intakeMotor = TalonSRXFactory.createTalon(intakeMotorConfig);
-        // innerPistons = new Solenoid(innerPistonsPin);
-        // outerPistons = new Solenoid(outerPistonsPin);
+        innerPistons = new Solenoid(innerPistonsPin);
+        outerPistons = new Solenoid(outerPistonsPin);
+    }
+
+    @Override
+    public void periodic() {
+        isInnerExtended = innerPistons.get();
     }
 
     public void extendOuter() {
-        // outerPistons.set(false);
+        outerPistons.set(true);
     }
 
     public void retractOuter() {
-        // outerPistons.set(false);
+        outerPistons.set(false);
     }
 
     public void extendInner() {
-        // innerPistons.set(true);
+        innerPistons.set(true);
     }
 
     public void retractInner() {
-        // innerPistons.set(false);
+        innerPistons.set(false);
     }
 
     private void setOpenLoop(double demand) {
@@ -60,6 +66,10 @@ public class Intake implements PeriodicSubsystem {
 
     public void spitOut(double demand) {
         setOpenLoop(demand);
+    }
+
+    public boolean isInnerExtended() {
+        return isInnerExtended;
     }
 
     @Override

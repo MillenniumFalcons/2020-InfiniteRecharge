@@ -24,12 +24,11 @@ public class ShootContinuously extends CommandBase {
     private double distanceToTargetMeters;
     private final Function<Double, Double> m_calculateRPMFromDistance;
 
-
     /**
      * Shoot balls continuously while execute is ran
      */
-    public ShootContinuously(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer, Function<Double, Double> calculateRPMFromDistance,
-            DoubleSupplier distanceToTarget) {
+    public ShootContinuously(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer,
+            Function<Double, Double> calculateRPMFromDistance, DoubleSupplier distanceToTarget) {
         m_flywheel = flywheel;
         m_kickerWheel = kickerWheel;
         m_indexer = indexer;
@@ -49,23 +48,33 @@ public class ShootContinuously extends CommandBase {
     public void execute() {
         distanceToTargetMeters = m_distanceToTarget.getAsDouble();
 
-        m_flywheel.setRPM(m_calculateRPMFromDistance.apply(distanceToTargetMeters));
-        m_kickerWheel.setRPM(m_calculateRPMFromDistance.apply(distanceToTargetMeters));
+        m_flywheel.setRPM(7500);
+        //7270rpm 2 blue fairlanes 1.5" foam .6 kicker wheel 12.5v battery
+        // m_kickerWheel.setRPM(m_calculateRPMFromDistance.apply(distanceToTargetMeters));
+        m_kickerWheel.setOpenloop(.6);
 
-        // there isn't a ball in the end of the indexer or both are at target velocity
-        if ((m_flywheel.reachedTargetVelocity() && m_kickerWheel.reachedTargetVelocity())
-                || !m_indexer.getBannerSensorValue()) {
-            m_indexer.set(IndexerSignal.GO);
-        }
-        // either of the velocities are not right and there is a ball close to the kicker wheels
-        else {
-            m_indexer.set(IndexerSignal.STOP);
+        if(m_flywheel.reachedTargetVelocity()) {
+            System.out.println("SHOOTING");
+            if(m_indexer.getBannerSensorValue()) {
+                m_indexer.set(IndexerSignal.GO_SLOW);
+            } else {
+                m_indexer.set(IndexerSignal.GO);
+            }
+        } else {
+            if(m_indexer.getBannerSensorValue()) {
+                m_indexer.set(IndexerSignal.TUNNELHOLD_GO);
+                System.out.println("STOPPING");
+            } else {
+                m_indexer.set(IndexerSignal.GO_SLOW);
+            }
         }
     }
 
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
+        m_flywheel.end();
+        m_kickerWheel.end();
     }
 
     // Returns true when the command should end.

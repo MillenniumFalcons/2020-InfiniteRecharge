@@ -5,6 +5,8 @@ import com.revrobotics.CANPIDController;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
+
+import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import lib.drivers.ClosedLoopFactory;
 import lib.drivers.SparkMaxFactory;
 import lib.drivers.SparkMaxUtil;
@@ -17,18 +19,21 @@ import lib.drivers.SparkMaxFactory.Configuration;
  */
 public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
 
+    public static double kDt = .01;
+
     private CANSparkMax master;
     private CANEncoder encoder;
     private CANPIDController pidController;
     private ControlType controlType = ControlType.kDutyCycle;
     private Configuration m_masterConfig;
     private ClosedLoopConfig m_pidConfig;
+    private SimpleMotorFeedforward feedforward;
 
     public static class PeriodicIO {
         // inputs
         public double position;
         public double velocity;
-
+        public double prevVelocity;
         // outputs
         /** In Volts */
         public double feedforward;
@@ -56,22 +61,20 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
         m_pidConfig = pidConfig;
         master = SparkMaxFactory.createSparkMax(m_masterConfig);
         encoder = new CANEncoder(master);
-        pidController =
-                ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
+        pidController = ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
+        feedforward = new SimpleMotorFeedforward(pidConfig.kS, pidConfig.kV, pidConfig.kA);
     }
 
     @Override
     public void init() {
         try {
             setToBrake();
-            ClosedLoopFactory.configSparkMaxPIDController(pidController, master, encoder,
-                    m_pidConfig, 0);
+            ClosedLoopFactory.configSparkMaxPIDController(pidController, master, encoder, m_pidConfig, 0);
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
             master = SparkMaxFactory.createSparkMax(m_masterConfig);
             encoder = master.getEncoder();
-            pidController =
-                    ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
+            pidController = ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
         }
     }
 
@@ -95,7 +98,9 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
     @Override
     public void end() {
         setOpenloop(0);
+        periodicIO.demand = 0;
         periodicIO.feedforward = 0;
+        controlType = ControlType.kDutyCycle;
     }
 
     protected void setEncoderPosition(double newPosition) {
@@ -110,11 +115,13 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
 
     protected void setVelocity(double velocity) {
         periodicIO.demand = velocity / m_pidConfig.kEncoderVelocityToRPM;
-        controlType = ControlType.kSmartMotion;
+        periodicIO.feedforward = feedforward.calculate(velocity / 60);
+        controlType = ControlType.kVelocity;
     }
 
     public void setOpenloop(double demand) {
         periodicIO.demand = demand;
+        periodicIO.feedforward = 0;
         controlType = ControlType.kDutyCycle;
     }
 
@@ -141,14 +148,16 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
         return false;
     }
 
-    protected boolean reachedVelocity(double velocity) {
+    public boolean reachedVelocity(double velocity) {
+        System.out.println(getName() + " velociy requested to check" + velocity);
+        System.out.println(getName() + " current velocity " + getVelocity());
         return velocity < getVelocity() + m_pidConfig.velocityThreshold
                 && velocity > getVelocity() - m_pidConfig.velocityThreshold;
     }
 
     public boolean reachedTargetVelocity() {
         if (controlType == ControlType.kVelocity) {
-            return reachedVelocity(getVelocity());
+            return reachedVelocity(periodicIO.demand * m_pidConfig.kEncoderVelocityToRPM);
         }
         return false;
     }
@@ -174,13 +183,17 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
     }
 
     private void setSparkMax(ControlType controlType, double demand, double feedForward) {
-        pidController.setReference(demand, controlType, 0, feedForward);
+        // if the feed is outside -12 to 12, adjust to -12 to 12
+        feedForward = Math.abs(feedForward) > 12 ? 12 * Math.signum(feedForward) : feedForward;
+        if (controlType == ControlType.kDutyCycle) {
+            master.set(demand);
+        } else {
+            pidController.setReference(demand, controlType, 0, feedForward);
+        }
     }
 
-    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config,
-            boolean isInvertedFromMaster) {
-        CANSparkMax follower =
-                SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
+    protected CANSparkMax addFollower(SparkMaxFactory.Configuration config, boolean isInvertedFromMaster) {
+        CANSparkMax follower = SparkMaxFactory.createSparkMaxFollower(master, config, isInvertedFromMaster);
         follower.follow(master, isInvertedFromMaster);
         return follower;
     }

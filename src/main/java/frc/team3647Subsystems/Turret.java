@@ -20,26 +20,27 @@ public class Turret extends TalonSRXSubsystem {
     private DigitalInput limitSwitch;
     private boolean isOnLimitSwitch = false;
 
-    public Turret(TalonSRXFactory.Configuration masterConfig, ClosedLoopConfig pidConfig,
-            double maxRotationDeg, double minRotationDeg, int limitSwitchPin) {
+    public Turret(TalonSRXFactory.Configuration masterConfig, ClosedLoopConfig pidConfig, double maxRotationDeg,
+            double minRotationDeg, int limitSwitchPin) {
         super(masterConfig, pidConfig);
         kMaxRotationDeg = maxRotationDeg;
         kMinRotationDeg = minRotationDeg;
         limitSwitch = new DigitalInput(limitSwitchPin);
+        setEncoderPosition(0);
     }
 
     @Override
     public void periodic() {
         super.periodic();
-        isOnLimitSwitch = limitSwitch.get();
+        isOnLimitSwitch = !limitSwitch.get();
         if (isOnLimitSwitch) {
-            resetEncoder();
+            // end();
         }
     }
 
     @Override
     protected void resetEncoder() {
-        setEncoderPositionUnits(kMaxRotationDeg);
+        setEncoderPositionUnits(180);
     }
 
     /**
@@ -61,9 +62,32 @@ public class Turret extends TalonSRXSubsystem {
     public void setAngle(double angle) {
         if (isAngleGood(angle)) {
             setPosition(angle);
+        } else if (isAngleTooBig(angle)) {
+            setPosition(kMaxRotationDeg);
+        } else if (isAngleTooSmall(angle)) {
+            setPosition(kMinRotationDeg);
         } else {
             end();
         }
+
+    }
+
+    private boolean isAngleTooBig(double angle) {
+        angle = ((angle % 360) + 360) % 360;
+
+        if (angle > 180) {
+            angle -= 360;
+        }
+        return angle >= kMaxRotationDeg;
+    }
+
+    private boolean isAngleTooSmall(double angle) {
+        angle = ((angle % 360) + 360) % 360;
+
+        if (angle > 180) {
+            angle -= 360;
+        }
+        return angle <= kMinRotationDeg;
     }
 
     public void setAngleMotionMagic(double angle) {
