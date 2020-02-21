@@ -8,32 +8,26 @@
 package frc.robot;
 
 import java.util.List;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.controller.PIDController;
 import edu.wpi.first.wpilibj.controller.RamseteController;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.geometry.Translation2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
 import edu.wpi.first.wpilibj.trajectory.constraint.DifferentialDriveVoltageConstraint;
-import edu.wpi.first.wpilibj.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RamseteCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpiutil.math.MathUtil;
 import frc.Commands.AimTurret;
 import frc.Commands.ArcadeDrive;
 import frc.Commands.ExtendIntakeToGround;
 import frc.Commands.GroundIntake;
+import frc.Commands.IndexerManual;
 import frc.Commands.LoadBalls;
 import frc.Commands.LoadingStationIntake;
 import frc.Commands.OrganizeFeeder;
@@ -51,7 +45,6 @@ import frc.team3647Subsystems.Turret;
 import frc.team3647Subsystems.VisionController;
 import frc.team3647inputs.Joysticks;
 import lib.GroupPrinter;
-import lib.IndexerSignal;
 import lib.wpi.Compressor;
 import lib.wpi.PDP;
 
@@ -83,7 +76,7 @@ public class RobotContainer {
             Constants.cFlywheel.pidConfig);
 
     private final Indexer m_indexer = new Indexer(Constants.cIndexer.funnelConfig, Constants.cIndexer.tunnelConfig,
-            Constants.cIndexer.rollersConfig, Constants.cIndexer.bannerSensorPin);
+            Constants.cIndexer.rollersConfig, Constants.cIndexer.bannerSensorPin, pdp::getCurrent);
 
     private final Intake m_intake = new Intake(Constants.cIntake.intakeMotorConfig, Constants.cIntake.innerPistonsPin,
             Constants.cIntake.outerPistonsPin);
@@ -125,40 +118,30 @@ public class RobotContainer {
     public RobotContainer() {
         // setTestingIndexer();
         airCompressor.start();
+        pdp.clearStickyFaults();
         // m_intake.extendInner();
         m_commandScheduler.registerSubsystem(m_kickerWheel, m_flywheel, m_visionController, m_intake, m_indexer,
                 m_drivetrain, m_printer);
         m_commandScheduler.setDefaultCommand(m_drivetrain, new ArcadeDrive(m_drivetrain, mainController::getLeftStickY,
                 mainController::getRightStickX, mainController.rightJoyStickPress::get));
         m_commandScheduler.setDefaultCommand(m_turret, new TurretManual(m_turret, coController::getLeftStickX));
-        m_printer.addDouble("shooter rpm", m_flywheel::getVelocity);
-        m_printer.addDouble("tunnel amps", this::getTunnelCurrent);
-        m_printer.addDouble("funnel amps", this::getFunnelCurrent);
+        m_indexer.setDefaultCommand(new IndexerManual(m_indexer, coController::getRightStickY));
+        // m_printer.addDouble("shooter rpm", m_flywheel::getVelocity);
+        m_printer.addDouble("tunnel amps", () -> {
+            return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
+        });
+        m_printer.addDouble("funnel amps", () -> {
+            return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
+        });
+        m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrnet);
         configButtonBindings();
-        // m_flywheel.setDefaultCommand(new RunCommand(() -> {
-        // m_flywheel.setRPM(coController.rightTrigger.getTriggerValue() * 7000);
-        // SmartDashboard.putNumber("required RPM",
-        // coController.rightTrigger.getTriggerValue() * 7000);
-        // SmartDashboard.putNumber("Shooter rpm", m_flywheel.getVelocity());
-        // }, m_flywheel));
-
-    }
-
-    public double getZero() {
-        return 0;
-    }
-
-    public boolean returnFalse() {
-        return false;
     }
 
     private void configButtonBindings() {
-        coController.leftTrigger.whenActive(new SequentialCommandGroup(new ConditionalCommand(new RunCommand(() -> {
+        coController.leftTrigger.whenActive(new SequentialCommandGroup(new RunCommand(() -> {
             m_intake.retractInner();
-        }, m_intake).withTimeout(.5), new InstantCommand(), m_intake::isInnerExtended),
-                new ExtendIntakeToGround(m_intake).withTimeout(.25),
-                new ParallelCommandGroup(new GroundIntake(m_intake, mainController::getLeftStickY),
-                        new LoadBalls(m_kickerWheel, m_indexer))));
+        }, m_intake).withTimeout(.5), new ExtendIntakeToGround(m_intake).withTimeout(.25), new ParallelCommandGroup(
+                new GroundIntake(m_intake, mainController::getLeftStickY), new LoadBalls(m_kickerWheel, m_indexer))));
 
         coController.leftTrigger.whenReleased(new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel));
 
@@ -203,96 +186,6 @@ public class RobotContainer {
         return ramseteCommand.andThen(() -> m_drivetrain.end());
     }
 
-    private void setTestingCommands() {
-
-        m_commandScheduler.registerSubsystem(m_flywheel);
-        m_commandScheduler.registerSubsystem(m_indexer);
-        m_commandScheduler.registerSubsystem(m_intake);
-        m_commandScheduler.registerSubsystem(m_kickerWheel);
-        SmartDashboard.putNumber("Shooter rpm", m_flywheel.getVelocity());
-        SmartDashboard.putNumber("Shooter demand", 0);
-        SmartDashboard.putNumber("Voltage", 0);
-        SmartDashboard.putNumber("vertical Rollers current", pdp.getCurrent(10));
-        SmartDashboard.putNumber("Kicker wheel current", pdp.getCurrent(11));
-        // SmartDashboard.putNumber("raw velocity", 0);
-
-        m_commandScheduler.setDefaultCommand(m_flywheel, new RunCommand(() -> {
-            m_flywheel.setOpenloop(mainController.rightTrigger.getTriggerValue());
-            SmartDashboard.putNumber("Shooter rpm", m_flywheel.getVelocity());
-            SmartDashboard.putNumber("Shooter demand", mainController.rightTrigger.getTriggerValue());
-            SmartDashboard.putNumber("Voltage", RobotController.getBatteryVoltage());
-        }, m_flywheel));
-
-        m_commandScheduler.setDefaultCommand(m_indexer, new RunCommand(() -> {
-            m_indexer.set(new IndexerSignal(0, // mainController.getRightStickY(),
-                    mainController.leftTrigger.getTriggerValue() * .7,
-                    // 0,
-                    mainController.leftTrigger.getTriggerValue()
-            // 0
-            ));
-            SmartDashboard.putNumber("vertical Rollers currnet", pdp.getCurrent(10));
-            // mainController.getRightStickY(), mainController.getRightStickY()));
-        }, m_indexer));
-
-        // m_commandScheduler.setDefaultCommand(m_intake, new RunCommand(() -> {
-        // m_intake.intake(mainController.rightTrigger.getTriggerValue());
-        // }, m_intake));
-
-        m_commandScheduler.setDefaultCommand(m_kickerWheel, new RunCommand(() -> {
-            m_kickerWheel.setOpenloop(mainController.rightTrigger.getTriggerValue());
-            SmartDashboard.putNumber("Kicker wheel currnet", pdp.getCurrent(11));
-        }, m_kickerWheel));
-    }
-
-    public void setTestingIndexer() {
-        m_commandScheduler.registerSubsystem(m_kickerWheel, m_indexer, m_intake);
-        mainController.leftBumper.whenActive(new ParallelCommandGroup(new RunCommand(() -> {
-            // m_intake.intake(.6);
-        }, m_intake), new LoadBalls(m_kickerWheel, m_indexer)));
-
-        mainController.rightBumper.whenActive(new RunCommand(() -> {
-            m_indexer.set(IndexerSignal.INDEXERBACK);
-        }, m_indexer));
-
-        mainController.rightBumper.whenReleased(new RunCommand(() -> {
-            m_indexer.end();
-        }, m_indexer));
-
-        mainController.leftBumper.whenReleased(new OrganizeFeeder(m_indexer, m_kickerWheel).withTimeout(3));
-        mainController.leftBumper.whenReleased(new RunCommand(() -> {
-            m_intake.intake(0);
-        }));
-
-        // mainController.leftBumper.whenActive(new RunCommand(() -> {
-        // m_intake.intake(.6);
-        // }));
-    }
-
-    public void setTurretTesting() {
-        m_commandScheduler.registerSubsystem(m_turret, m_visionController);
-        airCompressor.stop();
-        SmartDashboard.putNumber("turret encoder", m_turret.getPosition());
-        SmartDashboard.putBoolean("turret sensor", m_turret.isOnLimitSwitch());
-        m_commandScheduler.setDefaultCommand(m_turret, new RunCommand(() -> {
-            // m_turret.setOpenloop(mainController.getLeftStickY() * .5);
-            SmartDashboard.putNumber("turret encoder", m_turret.getPosition());
-            SmartDashboard.putNumber("turret Velocity", m_turret.getVelocity());
-            SmartDashboard.putBoolean("turret sensor", m_turret.isOnLimitSwitch());
-        }, m_turret));
-
-        m_commandScheduler.setDefaultCommand(m_visionController, new RunCommand(() -> {
-            SmartDashboard.putNumber("angle to target", m_visionController.getFilteredYaw());
-            SmartDashboard.putNumber("distance to target",
-                    Units.metersToFeet(m_visionController.getFilteredDistance()));
-        }, m_visionController));
-
-        mainController.dPadUp.whenActive(new TurretMotionMagic(m_turret, 0));
-        mainController.dPadLeft.whenActive(new TurretMotionMagic(m_turret, 90));
-        mainController.dPadRight.whenActive(new TurretMotionMagic(m_turret, -90));
-
-        mainController.rightBumper.whenActive(new AimTurret(m_turret, m_visionController::getFilteredYaw));
-    }
-
     public void init() {
         m_drivetrain.init();
         m_flywheel.init();
@@ -301,13 +194,5 @@ public class RobotContainer {
         m_kickerWheel.init();
         m_turret.init();
         m_visionController.init();
-    }
-
-    private double getTunnelCurrent() {
-        return pdp.getCurrent(8);
-    }
-
-    private double getFunnelCurrent() {
-        return pdp.getCurrent(5);
     }
 }

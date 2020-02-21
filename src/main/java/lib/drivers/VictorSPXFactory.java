@@ -22,6 +22,7 @@ public class VictorSPXFactory {
         public double maxOutput;
         public double minOutput;
         public double secondsFromNeutralToFull;
+        public int pdpSlot;
 
         public Configuration(int CANID) {
             this.CANID = CANID;
@@ -58,6 +59,10 @@ public class VictorSPXFactory {
 
         public Configuration configOpenLoopRampRate(double secondsFromNeutralToFull) {
             this.secondsFromNeutralToFull= secondsFromNeutralToFull;
+            return this;
+        }
+        public Configuration setPDPSlot(int slot) {
+            this.pdpSlot = slot;
             return this;
         }
     }

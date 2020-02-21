@@ -6,6 +6,7 @@ import com.revrobotics.CANPIDController;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
+
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
@@ -271,9 +272,9 @@ public class Drivetrain implements PeriodicSubsystem {
         if (driveSignal != null) {
             if (!isShifted()) {
                 periodicIO.leftFeedForward = feedforward.calculate(driveSignal.getLeft(),
-                        (driveSignal.getLeft() - periodicIO.leftVelocity) / .02);
+                        (driveSignal.getLeft() - periodicIO.leftVelocity) / kDt);
                 periodicIO.rightFeedForward = feedforward.calculate(driveSignal.getRight(),
-                        (driveSignal.getRight() - periodicIO.rightVelocity) / .02);
+                        (driveSignal.getRight() - periodicIO.rightVelocity) / kDt);
 
                 periodicIO.leftOutput = driveSignal.getLeft() / kEncoderVelocityToMetersPerSecond;
                 periodicIO.rightOutput = driveSignal.getRight() / kEncoderVelocityToMetersPerSecond;
@@ -358,6 +359,8 @@ public class Drivetrain implements PeriodicSubsystem {
         }
         if (scaleInputs) {
             m_maxOutput = .7;
+            leftMotorOutput *= m_maxOutput;
+            rightMotorOutput *= m_maxOutput;
         }
         // double currentLeftDesiredVelocity = MathUtil.clamp(leftMotorOutput, -1.0,
         // 1.0) *
@@ -378,7 +381,6 @@ public class Drivetrain implements PeriodicSubsystem {
         // setOpenLoop(new DriveSignal(leftVoltage / m_leftMasterConfig.nominalVoltage,
         // rightVoltage / m_rightMasterConfig.nominalVoltage));
         // }
-
         setOpenLoop(new DriveSignal(leftMotorOutput, rightMotorOutput));
 
         periodicIO.prevLeftDesiredVelocity = leftMotorOutput * m_leftPIDConfig.maxVelocity;
@@ -447,15 +449,6 @@ public class Drivetrain implements PeriodicSubsystem {
             HALMethods.sendDSError(e.toString());
         }
         periodicIO = new PeriodicIO();
-    }
-
-    private double limit(double value) {
-        if (value > 1) {
-            value = 1;
-        } else if (value < -1) {
-            value = -1;
-        }
-        return value;
     }
 
     /**

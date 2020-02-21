@@ -149,8 +149,6 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
     }
 
     public boolean reachedVelocity(double velocity) {
-        System.out.println(getName() + " velociy requested to check" + velocity);
-        System.out.println(getName() + " current velocity " + getVelocity());
         return velocity < getVelocity() + m_pidConfig.velocityThreshold
                 && velocity > getVelocity() - m_pidConfig.velocityThreshold;
     }

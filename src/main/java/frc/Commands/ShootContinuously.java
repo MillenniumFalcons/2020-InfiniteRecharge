@@ -48,22 +48,21 @@ public class ShootContinuously extends CommandBase {
     public void execute() {
         distanceToTargetMeters = m_distanceToTarget.getAsDouble();
 
-        m_flywheel.setRPM(7500);
+        m_flywheel.setRPM(7700);
         //7270rpm 2 blue fairlanes 1.5" foam .6 kicker wheel 12.5v battery
         // m_kickerWheel.setRPM(m_calculateRPMFromDistance.apply(distanceToTargetMeters));
         m_kickerWheel.setOpenloop(.6);
 
         if(m_flywheel.reachedTargetVelocity()) {
-            System.out.println("SHOOTING");
-            if(m_indexer.getBannerSensorValue()) {
-                m_indexer.set(IndexerSignal.GO_SLOW);
-            } else {
-                m_indexer.set(IndexerSignal.GO);
-            }
+            // if(m_indexer.getBannerSensorValue()) {
+            //     m_indexer.set(IndexerSignal.GO_SLOW);
+            // } else {
+            //     m_indexer.set(IndexerSignal.GO);
+            // }
+            m_indexer.set(IndexerSignal.GO);
         } else {
             if(m_indexer.getBannerSensorValue()) {
                 m_indexer.set(IndexerSignal.TUNNELHOLD_GO);
-                System.out.println("STOPPING");
             } else {
                 m_indexer.set(IndexerSignal.GO_SLOW);
             }

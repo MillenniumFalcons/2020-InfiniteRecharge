@@ -70,6 +70,7 @@ public class SparkMaxFactory {
     public static CANSparkMax createSparkMax(Configuration config) {
         CANSparkMax sparkmax = new CANSparkMax(config.CANID, MotorType.kBrushless);
         handleCANError(config.CANID, sparkmax.restoreFactoryDefaults(), "restore factory defaults");
+        handleCANError(config.CANID, sparkmax.clearFaults(), "clear faults");
 
         if (config.enableCurrentLimiting) {
             handleCANError(config.CANID, sparkmax.setSmartCurrentLimit(config.maxStallCurrent,
@@ -93,6 +94,7 @@ public class SparkMaxFactory {
             boolean isInvertedFromMaster) {
         CANSparkMax follower = new CANSparkMax(config.CANID, MotorType.kBrushless);
         handleCANError(config.CANID, follower.restoreFactoryDefaults(), "restore factory defaults");
+        handleCANError(config.CANID, follower.clearFaults(), "clear faults");
         if (config.voltageCompensation) {
             if (config.voltageCompensation) {
                 handleCANError(config.CANID,

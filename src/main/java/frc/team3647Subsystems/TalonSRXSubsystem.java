@@ -36,6 +36,7 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         // inputs
         public double position;
         public double velocity;
+        public double current;
 
         // outputs
         public double feedforward;
@@ -71,6 +72,7 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
     public void readPeriodicInputs() {
         periodicIO.position = master.getSelectedSensorPosition() * m_pidConfig.kEncoderTicksToUnits;
         periodicIO.velocity = master.getSelectedSensorVelocity() * m_pidConfig.kEncoderVelocityToRPM;
+        periodicIO.current = master.getStatorCurrent();
     }
 
     @Override
@@ -178,6 +180,10 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
 
     public double getVelocity() {
         return periodicIO.velocity;
+    }
+
+    public double getMasterCurrnet() {
+        return periodicIO.current;
     }
 
     public void setToCoast() {

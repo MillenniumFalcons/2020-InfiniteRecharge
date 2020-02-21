@@ -33,7 +33,7 @@ public class RollTunnelBack extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-      m_indexer.set(IndexerSignal.INDEXERBACK);
+      m_indexer.set(IndexerSignal.TUNNELDOWN_HOTDOGOUT);
       m_kickerWheel.setOpenloop(-.7);
   }
 

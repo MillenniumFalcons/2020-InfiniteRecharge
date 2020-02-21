@@ -9,9 +9,7 @@ package frc.team3647Subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import lib.drivers.TalonSRXFactory;
-import lib.drivers.VictorSPXFactory;
 import lib.wpi.Solenoid;
 
 /**
@@ -23,7 +21,6 @@ public class Intake implements PeriodicSubsystem {
     private final Solenoid outerPistons;
 
     private final TalonSRX intakeMotor;
-    private boolean isInnerExtended = false;
 
     public Intake(TalonSRXFactory.Configuration intakeMotorConfig, int innerPistonsPin,
             int outerPistonsPin) {
@@ -33,11 +30,6 @@ public class Intake implements PeriodicSubsystem {
         intakeMotor = TalonSRXFactory.createTalon(intakeMotorConfig);
         innerPistons = new Solenoid(innerPistonsPin);
         outerPistons = new Solenoid(outerPistonsPin);
-    }
-
-    @Override
-    public void periodic() {
-        isInnerExtended = innerPistons.get();
     }
 
     public void extendOuter() {
@@ -66,10 +58,6 @@ public class Intake implements PeriodicSubsystem {
 
     public void spitOut(double demand) {
         setOpenLoop(demand);
-    }
-
-    public boolean isInnerExtended() {
-        return isInnerExtended;
     }
 
     @Override

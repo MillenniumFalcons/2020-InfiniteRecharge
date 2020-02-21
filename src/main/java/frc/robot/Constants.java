@@ -167,15 +167,18 @@ public class Constants {
         public static final int rollersPin = 24;
         public static final int bannerSensorPin = 1;
 
+        public static final int funnelPDPSlot = 10;
+        public static final int tunnelPDPSlot = 8;
+
         public static boolean funnelInverted = true;
         public static boolean tunnelInverted = false;
         public static boolean rollersInverted = false;
 
         public static VictorSPXFactory.Configuration funnelConfig = new VictorSPXFactory.Configuration(funnelPin)
-                .setInverted(funnelInverted).configOpenLoopRampRate(.3);
+                .setInverted(funnelInverted).configOpenLoopRampRate(.3).setPDPSlot(10);
 
         public static VictorSPXFactory.Configuration tunnelConfig = new VictorSPXFactory.Configuration(tunnelPin)
-                .setInverted(tunnelInverted).configOpenLoopRampRate(.3);
+                .setInverted(tunnelInverted).configOpenLoopRampRate(.3).setPDPSlot(8);
         public static VictorSPXFactory.Configuration rollersConfig = new VictorSPXFactory.Configuration(rollersPin)
                 .setInverted(rollersInverted).configOpenLoopRampRate(.3);
 
@@ -204,7 +207,7 @@ public class Constants {
         public static final double visionDistanceToRPM = 1;
 
         public static TalonSRXFactory.Configuration masterConfig = new TalonSRXFactory.Configuration(masterPin,
-                inverted).currentLimiting(true, 40, 2, 15);
+                inverted).currentLimiting(true, 20, 1, 10).voltageCompensation(true, 10);
         // .neutralMode(NeutralMode.Brake).voltageCompensation(true, nominalVoltage)
         // .currentLimiting(true, peakCurrent, peakCurrentDuration, continuousCurrent);
         public static ClosedLoopConfig pidConfig = new ClosedLoopConfig().configPID(kP, kI, kD);
