@@ -5,41 +5,33 @@
 /* the project. */
 /*----------------------------------------------------------------------------*/
 
-package frc.Commands;
+package frc.commands;
 
-import java.util.function.DoubleSupplier;
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import frc.team3647Subsystems.Turret;
+import frc.team3647Subsystems.Intake;
 
-public class AimTurret extends CommandBase {
-
-    private final Turret m_turret;
-    private final DoubleSupplier m_angleToTarget;
+public class LoadingStationIntake extends CommandBase {
+    private final Intake m_intake;
 
     /**
-     * Creates a new AimTurret.
+     * Creates a new GroundIntake.
      */
-    public AimTurret(Turret turret, DoubleSupplier angleToTurret) {
-        m_turret = turret;
-        m_angleToTarget = angleToTurret;
-        addRequirements(m_turret);
+    public LoadingStationIntake(Intake intake) {
+        // Use addRequirements() here to declare subsystem dependencies.
+        m_intake = intake;
+        addRequirements(m_intake);
     }
 
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-    }
-
-    // Called every time the scheduler runs while the command is scheduled.
-    @Override
-    public void execute() {
-        m_turret.setAngle(m_turret.getAngle() - m_angleToTarget.getAsDouble());
+        m_intake.extendInner();
     }
 
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        m_turret.end();
+        m_intake.end();
     }
 
     // Returns true when the command should end.

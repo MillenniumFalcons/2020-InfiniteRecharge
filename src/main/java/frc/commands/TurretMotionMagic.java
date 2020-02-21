@@ -5,7 +5,7 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-package frc.Commands;
+package frc.commands;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.team3647Subsystems.Turret;

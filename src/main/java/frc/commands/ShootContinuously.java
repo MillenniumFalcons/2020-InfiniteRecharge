@@ -5,7 +5,7 @@
 /* the project. */
 /*----------------------------------------------------------------------------*/
 
-package frc.Commands;
+package frc.commands;
 
 import java.util.function.DoubleSupplier;
 import java.util.function.Function;

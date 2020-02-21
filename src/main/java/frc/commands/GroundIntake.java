@@ -5,41 +5,45 @@
 /* the project. */
 /*----------------------------------------------------------------------------*/
 
-package frc.Commands;
+package frc.commands;
 
+import java.util.function.DoubleSupplier;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.team3647Subsystems.Intake;
 
-public class RunIntakeRoller extends CommandBase {
-
+public class GroundIntake extends CommandBase {
     private final Intake m_intake;
-    private final double m_demand;
+    private final DoubleSupplier drivetrainDemand;
 
     /**
-     * Creates a new RunIntakeRoller.
+     * Creates a new GroundIntake.
      */
-    public RunIntakeRoller(Intake intake, double demand) {
+    public GroundIntake(Intake intake, DoubleSupplier drivetrainDemand) {
         // Use addRequirements() here to declare subsystem dependencies.
         m_intake = intake;
-        m_demand = demand;
+        this.drivetrainDemand = drivetrainDemand;
         addRequirements(m_intake);
     }
 
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
+        m_intake.extendOuter();
+        m_intake.extendInner();
     }
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_intake.intake(m_demand);
+        m_intake.extendOuter();
+        m_intake.extendInner();
+        m_intake.intake(.7 + Math.abs(drivetrainDemand.getAsDouble()) * .7);
     }
 
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        m_intake.end();
+
     }
 
     // Returns true when the command should end.

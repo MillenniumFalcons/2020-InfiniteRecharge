@@ -5,20 +5,23 @@
 /* the project. */
 /*----------------------------------------------------------------------------*/
 
-package frc.Commands;
+package frc.commands;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.team3647Subsystems.Indexer;
+import frc.team3647Subsystems.KickerWheel;
 import lib.IndexerSignal;
 
-public class RollTunnelForwards extends CommandBase {
+public class RollTunnelBack extends CommandBase {
 
     private final Indexer m_indexer;
+    private final KickerWheel m_kickerWheel;
   /**
    * Creates a new RollIndexerBack.
    */
-  public RollTunnelForwards(Indexer indexer) {
+  public RollTunnelBack(Indexer indexer, KickerWheel kickerWheel) {
       m_indexer = indexer;
+      m_kickerWheel = kickerWheel;
       addRequirements(m_indexer);
   }
 
@@ -30,18 +33,20 @@ public class RollTunnelForwards extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-      m_indexer.set(IndexerSignal.INDEXERFWD_SLOW);
+      m_indexer.set(IndexerSignal.TUNNELDOWN_HOTDOGOUT);
+      m_kickerWheel.setOpenloop(-.7);
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
       m_indexer.set(IndexerSignal.STOP);
+      m_kickerWheel.end();
   }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return m_indexer.getBannerSensorValue();
+    return !m_indexer.getBannerSensorValue();
   }
 }

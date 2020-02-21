@@ -5,27 +5,23 @@
 /* the project. */
 /*----------------------------------------------------------------------------*/
 
-package frc.Commands;
+package frc.commands;
 
-
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.team3647Subsystems.Indexer;
-import frc.team3647Subsystems.Intake;
 import frc.team3647Subsystems.KickerWheel;
 
 // NOTE: Consider using this command inline, rather than writing a subclass. For more
 // information, see:
 // https://docs.wpilib.org/en/latest/docs/software/commandbased/convenience-features.html
-public class StowIntakeAndOrganizeFeeder extends ParallelCommandGroup {
+public class OrganizeFeeder extends SequentialCommandGroup {
     /**
-     * Creates a new StowIntakeAndOrganizeFeeder.
+     * Move the balls back until the banner sensor is clear then moves forward until is true, to
+     * reorgranize before shooting so we don't shoot a ball while the kicker wheel is accelerating
      */
-    public StowIntakeAndOrganizeFeeder(Intake intake, Indexer indexer, KickerWheel kickerWheel) {
+    public OrganizeFeeder(Indexer indexer, KickerWheel kickerWheel) {
         // Add your commands in the super() call, e.g.
-        // super(new FooCommand(), new BarCommand());super();
-        super(new SequentialCommandGroup(new StowOuterPistons(intake).withTimeout(.3),
-                new RunIntakeRoller(intake, .3).withTimeout(.5)),
-                new OrganizeFeeder(indexer, kickerWheel).withTimeout(3));
+        // super(new FooCommand(), new BarCommand());
+        super(new RollTunnelBack(indexer, kickerWheel), new RollTunnelForwards(indexer).withTimeout(.5));
     }
 }

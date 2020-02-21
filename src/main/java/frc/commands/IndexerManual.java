@@ -1,29 +1,29 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved. */
-/* Open Source Software - may be modified and shared by FRC teams. The code */
+/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project. */
+/* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-package frc.Commands;
+package frc.commands;
+
+import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.team3647Subsystems.Indexer;
-import frc.team3647Subsystems.KickerWheel;
 import lib.IndexerSignal;
 
-public class LoadBalls extends CommandBase {
-    private final KickerWheel m_kickerWheel;
+public class IndexerManual extends CommandBase {
+    private final DoubleSupplier outputSupplier;
     private final Indexer m_indexer;
 
     /**
-     * Creates a new LoadBalls.
+     * Creates a new IndexerManual.
      */
-    public LoadBalls(KickerWheel kickerWheel, Indexer indexer) {
-        m_kickerWheel = kickerWheel;
+    public IndexerManual(Indexer indexer, DoubleSupplier output) {
         m_indexer = indexer;
-        addRequirements(m_kickerWheel, m_indexer);
-        // Use addRequirements() here to declare subsystem dependencies.
+        this.outputSupplier = output;
+        addRequirements(m_indexer);
     }
 
     // Called when the command is initially scheduled.
@@ -33,21 +33,14 @@ public class LoadBalls extends CommandBase {
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
-    public void execute() {        
-        if(m_indexer.getBannerSensorValue()) {
-            m_kickerWheel.setOpenloop(-0.1);
-            m_indexer.set(IndexerSignal.GO_SLOW);
-        } else {
-            m_indexer.set(IndexerSignal.GO);
-            m_kickerWheel.end();
-        }
+    public void execute() {
+        double output = outputSupplier.getAsDouble();
+        m_indexer.set(new IndexerSignal(Math.signum(output), output, output));
     }
 
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        m_indexer.end();
-        m_kickerWheel.end();
     }
 
     // Returns true when the command should end.
