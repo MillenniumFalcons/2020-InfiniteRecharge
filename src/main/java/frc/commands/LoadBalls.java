@@ -35,7 +35,7 @@ public class LoadBalls extends CommandBase {
     @Override
     public void execute() {        
         if(m_indexer.getBannerSensorValue()) {
-            m_kickerWheel.setOpenloop(-0.1);
+            m_kickerWheel.setOpenloop(-0.15);
             m_indexer.set(IndexerSignal.GO_SLOW);
         } else {
             m_indexer.set(IndexerSignal.GO);

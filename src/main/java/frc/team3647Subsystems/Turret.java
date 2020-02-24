@@ -61,11 +61,14 @@ public class Turret extends TalonSRXSubsystem {
 
     public void setAngle(double angle) {
         if (isAngleGood(angle)) {
+            updatePositionFeedforward();
             setPosition(angle);
         } else if (isAngleTooBig(angle)) {
             setPosition(kMaxRotationDeg);
+            updatePositionFeedforward();
         } else if (isAngleTooSmall(angle)) {
             setPosition(kMinRotationDeg);
+            updatePositionFeedforward();
         } else {
             end();
         }

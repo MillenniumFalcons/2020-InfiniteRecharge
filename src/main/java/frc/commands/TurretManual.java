@@ -33,7 +33,7 @@ public class TurretManual extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-      m_turret.setOpenloop(m_demand.getAsDouble() * .5);
+      m_turret.setOpenloop(-m_demand.getAsDouble() * .5);
   }
 
   // Called once the command ends or is interrupted.

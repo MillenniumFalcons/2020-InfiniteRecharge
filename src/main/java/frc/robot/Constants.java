@@ -146,6 +146,10 @@ public class Constants {
         public static final double kI = 0;
         public static final double kD = 30;
 
+        public static final double kS = 1;
+        public static final double kV = 0;
+        public static final double kA = 0;
+
         public static final double forwardDeg = 0;
         public static final double backwardDeg = 180;
         public static final double leftDeg = 90;
@@ -158,7 +162,7 @@ public class Constants {
         public static final ClosedLoopConfig pidConfig = new ClosedLoopConfig().encoderTicksToUnits(encoderTicksToUnits)
                 .encoderVelocityToRPM(encoderVelocityToRPM).encoderAccelerationToUnits(encoderVelocityToRPM)
                 .positionThreshold(.5).maxVelocity(50).maxAcceleration(kAccelerationRPMs).sensorInverted(sensorInverted)
-                .configPID(kP, kI, kD);
+                .configPID(kP, kI, kD).configFeedForward(kS, kV, kA);
     }
 
     public static class cIndexer {
@@ -178,7 +182,7 @@ public class Constants {
                 .setInverted(funnelInverted).configOpenLoopRampRate(.3).setPDPSlot(10);
 
         public static VictorSPXFactory.Configuration tunnelConfig = new VictorSPXFactory.Configuration(tunnelPin)
-                .setInverted(tunnelInverted).configOpenLoopRampRate(.3).setPDPSlot(8);
+                .setInverted(tunnelInverted).setPDPSlot(8);
         public static VictorSPXFactory.Configuration rollersConfig = new VictorSPXFactory.Configuration(rollersPin)
                 .setInverted(rollersInverted).configOpenLoopRampRate(.3);
 
@@ -207,7 +211,7 @@ public class Constants {
         public static final double visionDistanceToRPM = 1;
 
         public static TalonSRXFactory.Configuration masterConfig = new TalonSRXFactory.Configuration(masterPin,
-                inverted).currentLimiting(true, 20, 1, 10).voltageCompensation(true, 10);
+                inverted).currentLimiting(true, 20, 1, 10).voltageCompensation(true, 12);
         // .neutralMode(NeutralMode.Brake).voltageCompensation(true, nominalVoltage)
         // .currentLimiting(true, peakCurrent, peakCurrentDuration, continuousCurrent);
         public static ClosedLoopConfig pidConfig = new ClosedLoopConfig().configPID(kP, kI, kD);
@@ -232,10 +236,10 @@ public class Constants {
         public static final double kI = 0;
         public static final double kD = 0;
 
-        public static final double kS = 0.359;
-        public static final double kV = 0.059;
+        public static final double kS = 0.623;
+        public static final double kV = 0.0631;
         // public static final double kV = 0.03;
-        public static final double kA = 0.0141;
+        public static final double kA = 0.0241;
 
         public static final double kGearboxReduction = 2;
         public static final double encoderTicksToUnits = 42;
@@ -250,7 +254,7 @@ public class Constants {
                 .mirrorWithCANID(masterConfig, slavePin);
 
         public static ClosedLoopConfig pidConfig = new ClosedLoopConfig().configPID(kP, kI, kD)
-                .configFeedForward(kS, kV, kA).encoderTicksToUnits(encoderTicksToUnits).velocityThrehsold(150)
+                .configFeedForward(kS, kV, kA).encoderTicksToUnits(encoderTicksToUnits).velocityThrehsold(75)
                 .encoderVelocityToRPM(encoderVelocityToRPM).encoderAccelerationToUnits(encoderVelocityToRPM);
 
         public static double calculateRPM(double distance) {

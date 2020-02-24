@@ -23,6 +23,7 @@ public class IndexerManual extends CommandBase {
     public IndexerManual(Indexer indexer, DoubleSupplier output) {
         m_indexer = indexer;
         this.outputSupplier = output;
+
         addRequirements(m_indexer);
     }
 

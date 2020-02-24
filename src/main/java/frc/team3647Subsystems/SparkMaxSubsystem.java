@@ -34,6 +34,7 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
         public double position;
         public double velocity;
         public double prevVelocity;
+        public double appliedOutput;
         // outputs
         /** In Volts */
         public double feedforward;
@@ -82,6 +83,7 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
     public void readPeriodicInputs() {
         periodicIO.position = encoder.getPosition() * m_pidConfig.kEncoderTicksToUnits;
         periodicIO.velocity = encoder.getVelocity() * m_pidConfig.kEncoderVelocityToRPM;
+        periodicIO.appliedOutput = master.get();
     }
 
     @Override
@@ -131,6 +133,10 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
 
     public double getVelocity() {
         return periodicIO.velocity;
+    }
+
+    public double getOutput() {
+        return periodicIO.appliedOutput;
     }
 
     /**

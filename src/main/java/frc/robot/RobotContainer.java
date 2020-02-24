@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
 import edu.wpi.first.wpilibj.trajectory.constraint.DifferentialDriveVoltageConstraint;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RamseteCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -126,14 +127,16 @@ public class RobotContainer {
                 mainController::getRightStickX, mainController.rightJoyStickPress::get));
         m_commandScheduler.setDefaultCommand(m_turret, new TurretManual(m_turret, coController::getLeftStickX));
         m_indexer.setDefaultCommand(new IndexerManual(m_indexer, coController::getRightStickY));
-        // m_printer.addDouble("shooter rpm", m_flywheel::getVelocity);
+        m_printer.addDouble("shooter rpm", m_flywheel::getVelocity);
         m_printer.addDouble("tunnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
         m_printer.addDouble("funnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
-        m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrnet);
+        m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrent);
+        m_printer.addDouble("limelight angle", m_visionController::getFilteredYaw);
+        m_printer.addDouble("shooter applied output", m_flywheel::getOutput);
         configButtonBindings();
     }
 
@@ -143,7 +146,8 @@ public class RobotContainer {
         }, m_intake).withTimeout(.5), new ExtendIntakeToGround(m_intake).withTimeout(.25), new ParallelCommandGroup(
                 new GroundIntake(m_intake, mainController::getLeftStickY), new LoadBalls(m_kickerWheel, m_indexer))));
 
-        coController.leftTrigger.whenReleased(new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel));
+        coController.leftTrigger
+                .whenReleased(new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel).withTimeout(3));
 
         coController.leftBumper.whenActive(
                 new ParallelCommandGroup(new LoadingStationIntake(m_intake), new LoadBalls(m_kickerWheel, m_indexer)));
@@ -161,14 +165,21 @@ public class RobotContainer {
         coController.rightBumper.whenActive(new AimTurret(m_turret, m_visionController::getFilteredYaw));
         coController.rightTrigger
                 .whenActive(new ParallelCommandGroup(new AimTurret(m_turret, m_visionController::getFilteredYaw),
-                        new ShootContinuously(m_flywheel, m_kickerWheel, m_indexer, Constants.cFlywheel::calculateRPM,
-                                m_visionController::getFilteredDistance)));
+                        new ShootContinuously(m_flywheel, m_kickerWheel, m_indexer, coController.buttonB::get,
+                                Constants.cFlywheel::calculateRPM, m_visionController::getFilteredDistance)));
 
         coController.rightTrigger.whenReleased(new RunCommand(() -> {
             m_flywheel.end();
             m_kickerWheel.end();
             m_indexer.end();
-        }, m_flywheel, m_kickerWheel, m_indexer));
+        }, m_flywheel, m_kickerWheel, m_indexer).withTimeout(.5));
+
+        mainController.buttonA.whenActive(new InstantCommand(() -> {
+            m_drivetrain.shift();
+        }, m_drivetrain));
+        mainController.buttonY.whenActive(new InstantCommand(() -> {
+            m_drivetrain.unShift();
+        }, m_drivetrain));
 
         coController.dPadLeft.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.leftDeg));
         coController.dPadRight.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.rightDeg));

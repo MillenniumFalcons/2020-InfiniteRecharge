@@ -50,6 +50,7 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         m_pidConfig = pidConfig;
         master = TalonSRXFactory.createTalon(m_masterConfig);
         ClosedLoopFactory.configTalonPIDController(master, FeedbackDevice.CTRE_MagEncoder_Relative, pidConfig, 0);
+        feedForwad = new SimpleMotorFeedforward(pidConfig.kS, pidConfig.kV);
     }
 
     @Override
@@ -133,6 +134,14 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         controlMode = ControlMode.MotionMagic;
     }
 
+    protected void updatePositionFeedforward() {
+        if (controlMode == ControlMode.Position) {
+            periodicIO.feedforward = feedForwad
+                    .calculate(Math.signum(periodicIO.demand * m_pidConfig.kEncoderTicksToUnits - getPosition()));
+        }
+
+    }
+
     /**
      * @param velocity the velocity in RPM of the end effector
      */
@@ -182,7 +191,7 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         return periodicIO.velocity;
     }
 
-    public double getMasterCurrnet() {
+    public double getMasterCurrent() {
         return periodicIO.current;
     }
 

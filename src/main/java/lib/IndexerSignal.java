@@ -17,9 +17,11 @@ public class IndexerSignal {
 
     public static IndexerSignal STOP = new IndexerSignal(0, 0, 0);
     public static IndexerSignal GO = new IndexerSignal(1, .7, .4);
+    public static IndexerSignal GO_TUNNEL_STOP = new IndexerSignal(0, .7, 0);
     public static IndexerSignal SPITOUT = new IndexerSignal(-1, -1, -1);
-    public static IndexerSignal TUNNELHOLD_GO = new IndexerSignal(.7, 0, .3);
-    public static IndexerSignal GO_SLOW = new IndexerSignal(1, .4, .4);
+    public static IndexerSignal TUNNELHOLD_GO = new IndexerSignal(.5, 0, 0);
+    public static IndexerSignal GO_SLOW = new IndexerSignal(1, .58, .4);
+    public static IndexerSignal GO_FAST = new IndexerSignal(1, 1, .6);
     public static IndexerSignal TUNNELDOWN_HOTDOGOUT = new IndexerSignal(-.7, -.7, -.5);
     public static IndexerSignal INDEXERFWD_SLOW = new IndexerSignal(1, .4, .5);
 
