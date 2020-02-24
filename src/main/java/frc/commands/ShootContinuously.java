@@ -59,20 +59,64 @@ public class ShootContinuously extends CommandBase {
     @Override
     public void execute() {
         distanceToTargetMeters = m_distanceToTarget.getAsDouble();
+
+        // AUTO SHOT
         m_kickerWheel.setOpenloop(.35);
 
         if (m_flywheel.getVelocity() > 5500) {
-            motorOutputAtRPM = m_flywheel.getOutput();
-            reachedVelOnce = true;
+        motorOutputAtRPM = m_flywheel.getOutput();
+        reachedVelOnce = true;
 
         } else if (!reachedVelOnce) {
-            m_flywheel.setRPM(5500);
+        m_flywheel.setRPM(5500);
         }
 
         if (reachedVelOnce) {
-            m_indexer.set(IndexerSignal.GO_FAST);
-            m_flywheel.setOpenloop(motorOutputAtRPM * 1.02);
+        m_indexer.set(IndexerSignal.GO_FAST);
+        m_flywheel.setOpenloop(motorOutputAtRPM * 1.02);
         }
+        // ------------------------------------------------------------------
+        // initiation line : (2 rollers #4) battery 12.6 disabled
+
+        // m_kickerWheel.setOpenloop(.35);
+
+        // if (m_flywheel.getVelocity() > 4300) {
+        //     motorOutputAtRPM = m_flywheel.getOutput();
+        //     reachedVelOnce = true;
+
+        // } else if (!reachedVelOnce) {
+        //     m_flywheel.setRPM(4300);
+        // }
+
+        // if (reachedVelOnce) {
+        //     m_indexer.set(IndexerSignal.GO_FAST);
+        //     m_flywheel.setOpenloop(motorOutputAtRPM * 1.03);
+        // }
+        // ------------------------------------------------------------------
+
+        // Far shot from behind cp:
+        // m_kickerWheel.setOpenloop(1);
+
+        // m_flywheel.setRPM(7300);
+
+        // if (m_flywheel.reachedTargetVelocity() || shootAnyways.getAsBoolean()) {
+        //     if (m_indexer.getBannerSensorValue()) {
+        //         m_indexer.set(IndexerSignal.GO_SLOW);
+        //     } else {
+        //         m_indexer.set(IndexerSignal.GO);
+        //     }
+        //     voltageTooLowTimer.reset();
+        // } else {
+        //     if (!voltageTooLowTimer.isRunning()) {
+        //         voltageTooLowTimer.start();
+        //     }
+        //     if (m_indexer.getBannerSensorValue()) {
+        //         m_indexer.set(IndexerSignal.TUNNELHOLD_GO);
+        //     } else {
+        //         m_indexer.set(IndexerSignal.GO_SLOW);
+        //     }
+        // }
+
     }
 
     // Called once the command ends or is interrupted.
