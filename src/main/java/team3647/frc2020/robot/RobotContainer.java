@@ -174,13 +174,6 @@ public class RobotContainer {
             m_indexer.end();
         }, m_flywheel, m_kickerWheel, m_indexer).withTimeout(.5));
 
-        mainController.buttonA.whenActive(new InstantCommand(() -> {
-            m_drivetrain.shift();
-        }, m_drivetrain));
-        mainController.buttonY.whenActive(new InstantCommand(() -> {
-            m_drivetrain.unShift();
-        }, m_drivetrain));
-
         coController.dPadLeft.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.leftDeg).withTimeout(.5));
         coController.dPadRight.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.rightDeg).withTimeout(.5));
         coController.dPadUp.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.forwardDeg).withTimeout(.5));
