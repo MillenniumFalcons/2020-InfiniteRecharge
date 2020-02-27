@@ -191,7 +191,7 @@ public class Drivetrain implements PeriodicSubsystem {
 
     @Override
     public synchronized void writePeriodicOutputs() {
-        if (shifted && periodicIO.leftOutput != periodicIO.rightOutput) {
+        if (shifted && Math.abs(periodicIO.leftOutput - periodicIO.rightOutput) < 0.0005) {
             HALMethods.sendDSError("Left motor outout: " + periodicIO.leftOutput + " and right output: "
                     + periodicIO.rightOutput + " are not equal!!");
             HALMethods.sendDSError("Setting drivetrain to stop!!");
@@ -256,13 +256,16 @@ public class Drivetrain implements PeriodicSubsystem {
     }
 
     public void shift() {
-        shifter.set(true);
-        shifted = true;
+        setShifter(true);
     }
 
     public void unShift() {
-        shifter.set(false);
-        shifted = false;
+        setShifter(false);
+    }
+
+    public void setShifter(boolean value) {
+        shifter.set(value);
+        shifted = value;
     }
 
     /**

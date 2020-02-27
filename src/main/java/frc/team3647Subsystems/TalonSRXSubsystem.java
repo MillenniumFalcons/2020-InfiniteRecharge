@@ -17,6 +17,7 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import lib.drivers.TalonSRXUtil;
 import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
+import lib.team3647Utils.RollingAverage;
 import lib.drivers.ClosedLoopFactory;
 import lib.drivers.TalonSRXFactory;
 import lib.wpi.HALMethods;
@@ -31,6 +32,8 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
     private SimpleMotorFeedforward feedForwad;
     private TalonSRXFactory.Configuration m_masterConfig;
     private ClosedLoopConfig m_pidConfig;
+    private final RollingAverage velocityAverage;
+    private final RollingAverage positionAverage;
 
     public static class PeriodicIO {
         // inputs
@@ -43,6 +46,9 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         public double demand;
     }
 
+    private boolean positionFiltering = false;
+    private boolean velocityFiltering = false;
+
     private PeriodicIO periodicIO = new PeriodicIO();
 
     protected TalonSRXSubsystem(TalonSRXFactory.Configuration masterConfig, ClosedLoopConfig pidConfig) {
@@ -51,6 +57,16 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         master = TalonSRXFactory.createTalon(m_masterConfig);
         ClosedLoopFactory.configTalonPIDController(master, FeedbackDevice.CTRE_MagEncoder_Relative, pidConfig, 0);
         feedForwad = new SimpleMotorFeedforward(pidConfig.kS, pidConfig.kV);
+        velocityAverage = new RollingAverage(10);
+        positionAverage = new RollingAverage(10);
+    }
+
+    protected void enableVelocityFiltering() {
+        velocityFiltering = true;
+    }
+
+    protected void enablePositionFiltering() {
+        positionFiltering = true;
     }
 
     @Override
@@ -73,6 +89,13 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
     public void readPeriodicInputs() {
         periodicIO.position = master.getSelectedSensorPosition() * m_pidConfig.kEncoderTicksToUnits;
         periodicIO.velocity = master.getSelectedSensorVelocity() * m_pidConfig.kEncoderVelocityToRPM;
+        if (velocityFiltering) {
+            velocityAverage.add(getVelocity());
+        }
+
+        if (positionFiltering) {
+            positionAverage.add(getPosition());
+        }
         periodicIO.current = master.getStatorCurrent();
     }
 
@@ -159,11 +182,19 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         controlMode = ControlMode.PercentOutput;
     }
 
+    /**
+     * @param position position to check in real world units, average position over
+     *                 last 10 loops
+     */
     protected boolean reachedPosition(double position) {
-        return position < getPosition() + m_pidConfig.positionThreshold
-                && position > getPosition() - m_pidConfig.positionThreshold;
+        return positionFiltering && (position < getFilteredPosition() + m_pidConfig.positionThreshold
+                && position > getFilteredPosition() - m_pidConfig.positionThreshold);
     }
 
+    /**
+     * @return is the subsystem at the target position, average position over last
+     *         10 loops
+     */
     public boolean reachedTargetPosition() {
         if (controlMode == ControlMode.Position || controlMode == ControlMode.MotionMagic) {
             return reachedPosition(periodicIO.demand);
@@ -171,14 +202,54 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
         return false;
     }
 
-    protected boolean reachedVelocity(double velocity) {
+    /**
+     * @param position position to check in real world units, subsystem could be
+     *                 moving
+     */
+    protected boolean atPosition(double position) {
+        return position < getPosition() + m_pidConfig.positionThreshold
+                && position > getPosition() - m_pidConfig.positionThreshold
+                && Math.abs(getVelocity()) < m_pidConfig.velocityThreshold;
+    }
+
+    /**
+     * @return is the subsystem at the target position, subsystem could be moving
+     */
+    public boolean atTargetPosition() {
+        if (controlMode == ControlMode.Position || controlMode == ControlMode.MotionMagic) {
+            return atPosition(periodicIO.demand);
+        }
+        return false;
+    }
+
+    public boolean atVelocity(double velocity) {
         return velocity < getVelocity() + m_pidConfig.velocityThreshold
                 && velocity > getVelocity() - m_pidConfig.velocityThreshold;
     }
 
+    public boolean reachedVelocity(double velocity) {
+        return velocityFiltering && (velocity < getFilteredVelocity() + m_pidConfig.velocityThreshold
+                && velocity > getFilteredVelocity() - m_pidConfig.velocityThreshold);
+    }
+
+    /**
+     * @return is the current rpm match the setpoint although could be accelerating
+     *         or decelerating away
+     */
+    public boolean atTargetVelocity() {
+        if (controlMode == ControlMode.Velocity) {
+            return atVelocity(periodicIO.demand * m_pidConfig.kEncoderVelocityToRPM);
+        }
+        return false;
+    }
+
+    /**
+     * @return was the motor rpm average from the last 10 loops between the rpm
+     *         thresholds and setpoint
+     */
     public boolean reachedTargetVelocity() {
         if (controlMode == ControlMode.Velocity) {
-            return reachedVelocity(getVelocity());
+            return reachedVelocity(periodicIO.demand * m_pidConfig.kEncoderVelocityToRPM);
         }
         return false;
     }
@@ -189,6 +260,14 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
 
     public double getVelocity() {
         return periodicIO.velocity;
+    }
+
+    public double getFilteredVelocity() {
+        return velocityAverage.getAverage();
+    }
+
+    public double getFilteredPosition() {
+        return positionAverage.getAverage();
     }
 
     public double getMasterCurrent() {

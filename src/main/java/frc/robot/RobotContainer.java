@@ -124,7 +124,7 @@ public class RobotContainer {
         m_commandScheduler.registerSubsystem(m_kickerWheel, m_flywheel, m_visionController, m_intake, m_indexer,
                 m_drivetrain, m_printer);
         m_commandScheduler.setDefaultCommand(m_drivetrain, new ArcadeDrive(m_drivetrain, mainController::getLeftStickY,
-                mainController::getRightStickX, mainController.rightJoyStickPress::get));
+                mainController::getRightStickX, mainController.rightJoyStickPress::get, mainController.buttonA::get));
         m_commandScheduler.setDefaultCommand(m_turret, new TurretManual(m_turret, coController::getLeftStickX));
         m_indexer.setDefaultCommand(new IndexerManual(m_indexer, coController::getRightStickY));
         m_printer.addDouble("shooter rpm", m_flywheel::getVelocity);
@@ -181,10 +181,11 @@ public class RobotContainer {
             m_drivetrain.unShift();
         }, m_drivetrain));
 
-        coController.dPadLeft.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.leftDeg));
-        coController.dPadRight.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.rightDeg));
-        coController.dPadUp.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.forwardDeg));
-        coController.dPadDown.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.backwardDeg));
+        coController.dPadLeft.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.leftDeg).withTimeout(.5));
+        coController.dPadRight.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.rightDeg).withTimeout(.5));
+        coController.dPadUp.whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.forwardDeg).withTimeout(.5));
+        coController.dPadDown
+                .whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.backwardDeg).withTimeout(.5));
     }
 
     public Command getAutonomousCommand() {

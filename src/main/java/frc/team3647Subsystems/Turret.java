@@ -23,6 +23,7 @@ public class Turret extends TalonSRXSubsystem {
     public Turret(TalonSRXFactory.Configuration masterConfig, ClosedLoopConfig pidConfig, double maxRotationDeg,
             double minRotationDeg, int limitSwitchPin) {
         super(masterConfig, pidConfig);
+        enablePositionFiltering();
         kMaxRotationDeg = maxRotationDeg;
         kMinRotationDeg = minRotationDeg;
         limitSwitch = new DigitalInput(limitSwitchPin);
@@ -61,8 +62,8 @@ public class Turret extends TalonSRXSubsystem {
 
     public void setAngle(double angle) {
         if (isAngleGood(angle)) {
-            updatePositionFeedforward();
             setPosition(angle);
+            updatePositionFeedforward();
         } else if (isAngleTooBig(angle)) {
             setPosition(kMaxRotationDeg);
             updatePositionFeedforward();

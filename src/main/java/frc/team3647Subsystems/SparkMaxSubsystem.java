@@ -13,6 +13,7 @@ import lib.drivers.SparkMaxUtil;
 import lib.wpi.HALMethods;
 import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 import lib.drivers.SparkMaxFactory.Configuration;
+import lib.team3647Utils.RollingAverage;
 
 /**
  * Add you own bounds.
@@ -26,8 +27,13 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
     private CANPIDController pidController;
     private ControlType controlType = ControlType.kDutyCycle;
     private Configuration m_masterConfig;
-    private ClosedLoopConfig m_pidConfig;
+    private final ClosedLoopConfig m_pidConfig;
     private SimpleMotorFeedforward feedforward;
+    private final RollingAverage velocityAverage;
+    private final RollingAverage positionAverage;
+
+    private boolean positionFiltering = false;
+    private boolean velocityFiltering = false;
 
     public static class PeriodicIO {
         // inputs
@@ -64,6 +70,16 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
         encoder = new CANEncoder(master);
         pidController = ClosedLoopFactory.createSparkMaxPIDController(master, encoder, m_pidConfig, 0);
         feedforward = new SimpleMotorFeedforward(pidConfig.kS, pidConfig.kV, pidConfig.kA);
+        velocityAverage = new RollingAverage(10);
+        positionAverage = new RollingAverage(10);
+    }
+
+    protected void enableVelocityFiltering() {
+        velocityFiltering = true;
+    }
+
+    protected void enablePositionFiltering() {
+        positionFiltering = true;
     }
 
     @Override
@@ -83,6 +99,13 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
     public void readPeriodicInputs() {
         periodicIO.position = encoder.getPosition() * m_pidConfig.kEncoderTicksToUnits;
         periodicIO.velocity = encoder.getVelocity() * m_pidConfig.kEncoderVelocityToRPM;
+        if (velocityFiltering) {
+            velocityAverage.add(getVelocity());
+        }
+
+        if (positionFiltering) {
+            positionAverage.add(getPosition());
+        }
         periodicIO.appliedOutput = master.get();
     }
 
@@ -135,30 +158,83 @@ public abstract class SparkMaxSubsystem implements PeriodicSubsystem {
         return periodicIO.velocity;
     }
 
+    public double getFilteredVelocity() {
+        return velocityAverage.getAverage();
+    }
+
+    public double getFilteredPosition() {
+        return positionAverage.getAverage();
+    }
+
     public double getOutput() {
         return periodicIO.appliedOutput;
     }
 
     /**
-     * @param position position to check in real world units
+     * @param position position to check in real world units, average position over
+     *                 last 10 loops
      */
     protected boolean reachedPosition(double position) {
-        return position < getPosition() + m_pidConfig.positionThreshold
-                && position > getPosition() - m_pidConfig.positionThreshold;
+        return positionFiltering && (position < getFilteredPosition() + m_pidConfig.positionThreshold
+                && position > getFilteredPosition() - m_pidConfig.positionThreshold);
     }
 
-    public boolean getTargetPosition() {
+    /**
+     * @return is the subsystem at the target position, average position over last
+     *         10 loops
+     */
+    public boolean reachedTargetPosition() {
         if (controlType == ControlType.kPosition || controlType == ControlType.kSmartMotion) {
             return reachedPosition(periodicIO.demand);
         }
         return false;
     }
 
-    public boolean reachedVelocity(double velocity) {
+    /**
+     * @param position position to check in real world units, subsystem could be
+     *                 moving
+     */
+    protected boolean atPosition(double position) {
+        return position < getPosition() + m_pidConfig.positionThreshold
+                && position > getPosition() - m_pidConfig.positionThreshold
+                && Math.abs(getVelocity()) < m_pidConfig.velocityThreshold;
+    }
+
+    /**
+     * @return is the subsystem at the target position, subsystem could be moving
+     */
+    public boolean atTargetPosition() {
+        if (controlType == ControlType.kPosition || controlType == ControlType.kSmartMotion) {
+            return atPosition(periodicIO.demand);
+        }
+        return false;
+    }
+
+    public boolean atVelocity(double velocity) {
         return velocity < getVelocity() + m_pidConfig.velocityThreshold
                 && velocity > getVelocity() - m_pidConfig.velocityThreshold;
     }
 
+    public boolean reachedVelocity(double velocity) {
+        return velocityFiltering && (velocity < getFilteredVelocity() + m_pidConfig.velocityThreshold
+                && velocity > getFilteredVelocity() - m_pidConfig.velocityThreshold);
+    }
+
+    /**
+     * @return is the current rpm match the setpoint although could be accelerating
+     *         or decelerating away
+     */
+    public boolean atTargetVelocity() {
+        if (controlType == ControlType.kVelocity) {
+            return atVelocity(periodicIO.demand * m_pidConfig.kEncoderVelocityToRPM);
+        }
+        return false;
+    }
+
+    /**
+     * @return was the motor rpm average from the last 10 loops between the rpm
+     *         thresholds and setpoint
+     */
     public boolean reachedTargetVelocity() {
         if (controlType == ControlType.kVelocity) {
             return reachedVelocity(periodicIO.demand * m_pidConfig.kEncoderVelocityToRPM);

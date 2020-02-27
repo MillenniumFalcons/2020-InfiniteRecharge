@@ -10,6 +10,7 @@ package frc.team3647Subsystems;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
+import lib.team3647Utils.RollingAverage;
 import lib.drivers.SparkMaxFactory;
 
 /**
@@ -18,18 +19,27 @@ import lib.drivers.SparkMaxFactory;
 public class Flywheel extends SparkMaxSubsystem {
 
     private final CANSparkMax follower;
+    private final RollingAverage velocityAverage;
 
-    public Flywheel(SparkMaxFactory.Configuration masterConfig,
-            SparkMaxFactory.Configuration followerConfig, ClosedLoopConfig pidConfig) {
+    public Flywheel(SparkMaxFactory.Configuration masterConfig, SparkMaxFactory.Configuration followerConfig,
+            ClosedLoopConfig pidConfig) {
         super(masterConfig, pidConfig);
+        super.enableVelocityFiltering();
         follower = addFollower(followerConfig, true);
+        velocityAverage = new RollingAverage(10);
         setToBrake();
     }
 
     public void setRPM(double RPM) {
         setVelocity(RPM);
     }
-    
+
+    @Override
+    public void readPeriodicInputs() {
+        super.readPeriodicInputs();
+        velocityAverage.add(getVelocity());
+    }
+
     public String getName() {
         return "Flywheel";
     }
