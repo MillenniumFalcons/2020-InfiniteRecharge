@@ -36,8 +36,8 @@ public class Constants {
 
         public static final double kTrackwidthMeters = 1.108081713274498;
         public static final double kTrackWidthMeters2 = .7239849047751171;
-        public static final DifferentialDriveKinematics kDriveKinematics = new DifferentialDriveKinematics(
-                kTrackwidthMeters);
+        public static final DifferentialDriveKinematics kDriveKinematics =
+                new DifferentialDriveKinematics(kTrackwidthMeters);
 
         public static final double kMaxSpeedMetersPerSecond = 3;
         public static final double kMaxAccelerationMetersPerSecondSquared = 3.0;
@@ -45,21 +45,24 @@ public class Constants {
         public static final double maxVoltage = 11.0;
         public static final double gearboxReduction = 9.0 / 42.0 * 24.0 / 50.0;
 
-        public static final double neoRotationsToMeters = gearboxReduction * kWheelDiameter * Math.PI;
+        public static final double neoRotationsToMeters =
+                gearboxReduction * kWheelDiameter * Math.PI;
 
-        public static final SparkMaxFactory.Configuration leftMasterConfig = new SparkMaxFactory.Configuration(
-                leftMasterPin, false).currentLimiting(true, maxCurrent, stallCurrent).idleMode(IdleMode.kBrake)
+        public static final SparkMaxFactory.Configuration leftMasterConfig =
+                new SparkMaxFactory.Configuration(leftMasterPin, false)
+                        .currentLimiting(true, maxCurrent, stallCurrent).idleMode(IdleMode.kBrake)
                         .voltageCompensation(true, 12.0);
 
-        public static final SparkMaxFactory.Configuration rightMasterConfig = new SparkMaxFactory.Configuration(
-                rightMasterPin, true).currentLimiting(true, maxCurrent, stallCurrent).idleMode(IdleMode.kBrake)
+        public static final SparkMaxFactory.Configuration rightMasterConfig =
+                new SparkMaxFactory.Configuration(rightMasterPin, true)
+                        .currentLimiting(true, maxCurrent, stallCurrent).idleMode(IdleMode.kBrake)
                         .voltageCompensation(true, 12.0);
 
-        public static final SparkMaxFactory.Configuration leftSlaveConfig = SparkMaxFactory.Configuration
-                .mirrorWithCANID(leftMasterConfig, leftSlavePin);
+        public static final SparkMaxFactory.Configuration leftSlaveConfig =
+                SparkMaxFactory.Configuration.mirrorWithCANID(leftMasterConfig, leftSlavePin);
 
-        public static final SparkMaxFactory.Configuration rightSlaveConfig = SparkMaxFactory.Configuration
-                .mirrorWithCANID(rightMasterConfig, rightSlavePin);
+        public static final SparkMaxFactory.Configuration rightSlaveConfig =
+                SparkMaxFactory.Configuration.mirrorWithCANID(rightMasterConfig, rightSlavePin);
 
         public static final ClosedLoopConfig leftMasterPIDConfig = new ClosedLoopConfig()
                 .encoderVelocityToRPM(gearboxReduction).encoderTicksToUnits(neoRotationsToMeters)
@@ -76,15 +79,16 @@ public class Constants {
         public static final int intakeMotorPin = 8;
 
         public static final boolean inverted = false;
-        public static TalonSRXFactory.Configuration intakeMotorConfig = new TalonSRXFactory.Configuration(
-                intakeMotorPin, inverted).configOpenLoopRampRate(.3);
+        public static TalonSRXFactory.Configuration intakeMotorConfig =
+                new TalonSRXFactory.Configuration(intakeMotorPin, inverted)
+                        .configOpenLoopRampRate(.3);
     }
 
     public static class cPPSpinner {
-        public static final RGB red = new RGB(new double[] { .51, .35, .14 });
-        public static final RGB green = new RGB(new double[] { .15, .59, .25 });
-        public static final RGB blue = new RGB(new double[] { .12, .42, .45 });
-        public static final RGB yellow = new RGB(new double[] { .32, .56, .12 });
+        public static final RGB red = new RGB(new double[] {.51, .35, .14});
+        public static final RGB green = new RGB(new double[] {.15, .59, .25});
+        public static final RGB blue = new RGB(new double[] {.12, .42, .45});
+        public static final RGB yellow = new RGB(new double[] {.32, .56, .12});
         // public static final RGB test = new RGB(new double[] {});
         public static final double colorThreshold = 0.05; // percentage
     }
@@ -114,8 +118,9 @@ public class Constants {
 
         public static final String camIP = "10.36.47.15";
 
-        public static final VisionController.CamConstants camConstants = new VisionController.CamConstants(kGoalHeight,
-                kCameraHeight, camAngle, kImageCaptureLatency);
+        public static final VisionController.CamConstants camConstants =
+                new VisionController.CamConstants(kGoalHeight, kCameraHeight, camAngle,
+                        kImageCaptureLatency);
     }
 
     public static class cTurret {
@@ -139,7 +144,8 @@ public class Constants {
 
         public static final double reductionFromEncoder = 16.0 / 130.0;
 
-        public static final double encoderTicksToUnits = (reductionFromEncoder / magEncoderTicksPerRev) * 360.0;
+        public static final double encoderTicksToUnits =
+                (reductionFromEncoder / magEncoderTicksPerRev) * 360.0;
         public static final double encoderVelocityToRPM = encoderTicksToUnits / 360.0 * 10 * 60;
 
         public static final double kP = 1;
@@ -155,13 +161,15 @@ public class Constants {
         public static final double leftDeg = 90;
         public static final double rightDeg = -90;
 
-        public static final TalonSRXFactory.Configuration masterConfig = new TalonSRXFactory.Configuration(masterPin,
-                inverted).neutralMode(NeutralMode.Brake).voltageCompensation(true, nominalVoltage).currentLimiting(true,
-                        peakCurrent, peakCurrentDuration, continuousCurrent);
+        public static final TalonSRXFactory.Configuration masterConfig =
+                new TalonSRXFactory.Configuration(masterPin, inverted)
+                        .neutralMode(NeutralMode.Brake).voltageCompensation(true, nominalVoltage)
+                        .currentLimiting(true, peakCurrent, peakCurrentDuration, continuousCurrent);
 
-        public static final ClosedLoopConfig pidConfig = new ClosedLoopConfig().encoderTicksToUnits(encoderTicksToUnits)
-                .encoderVelocityToRPM(encoderVelocityToRPM).encoderAccelerationToUnits(encoderVelocityToRPM)
-                .positionThreshold(.5).maxVelocity(50).maxAcceleration(kAccelerationRPMs).sensorInverted(sensorInverted)
+        public static final ClosedLoopConfig pidConfig = new ClosedLoopConfig()
+                .encoderTicksToUnits(encoderTicksToUnits).encoderVelocityToRPM(encoderVelocityToRPM)
+                .encoderAccelerationToUnits(encoderVelocityToRPM).positionThreshold(.5)
+                .maxVelocity(50).maxAcceleration(kAccelerationRPMs).sensorInverted(sensorInverted)
                 .configPID(kP, kI, kD).configFeedForward(kS, kV, kA);
     }
 
@@ -178,13 +186,16 @@ public class Constants {
         public static boolean tunnelInverted = false;
         public static boolean rollersInverted = false;
 
-        public static VictorSPXFactory.Configuration funnelConfig = new VictorSPXFactory.Configuration(funnelPin)
-                .setInverted(funnelInverted).configOpenLoopRampRate(.3).setPDPSlot(10);
+        public static VictorSPXFactory.Configuration funnelConfig =
+                new VictorSPXFactory.Configuration(funnelPin).setInverted(funnelInverted)
+                        .configOpenLoopRampRate(.3).setPDPSlot(10);
 
-        public static VictorSPXFactory.Configuration tunnelConfig = new VictorSPXFactory.Configuration(tunnelPin)
-                .setInverted(tunnelInverted).setPDPSlot(8);
-        public static VictorSPXFactory.Configuration rollersConfig = new VictorSPXFactory.Configuration(rollersPin)
-                .setInverted(rollersInverted).configOpenLoopRampRate(.3);
+        public static VictorSPXFactory.Configuration tunnelConfig =
+                new VictorSPXFactory.Configuration(tunnelPin).setInverted(tunnelInverted)
+                        .setPDPSlot(8);
+        public static VictorSPXFactory.Configuration rollersConfig =
+                new VictorSPXFactory.Configuration(rollersPin).setInverted(rollersInverted)
+                        .configOpenLoopRampRate(.3);
 
     }
 
@@ -210,8 +221,9 @@ public class Constants {
 
         public static final double visionDistanceToRPM = 1;
 
-        public static TalonSRXFactory.Configuration masterConfig = new TalonSRXFactory.Configuration(masterPin,
-                inverted).currentLimiting(true, 20, 1, 10).voltageCompensation(true, 12);
+        public static TalonSRXFactory.Configuration masterConfig =
+                new TalonSRXFactory.Configuration(masterPin, inverted)
+                        .currentLimiting(true, 20, 1, 10).voltageCompensation(true, 12);
         // .neutralMode(NeutralMode.Brake).voltageCompensation(true, nominalVoltage)
         // .currentLimiting(true, peakCurrent, peakCurrentDuration, continuousCurrent);
         public static ClosedLoopConfig pidConfig = new ClosedLoopConfig().configPID(kP, kI, kD);
@@ -247,19 +259,27 @@ public class Constants {
 
         public static final double visionDistanceToRPM = 1;
 
-        public static SparkMaxFactory.Configuration masterConfig = new SparkMaxFactory.Configuration(masterPin,
-                masterInverted).idleMode(IdleMode.kBrake).voltageCompensation(true, nominalVoltage)
+        public static SparkMaxFactory.Configuration masterConfig =
+                new SparkMaxFactory.Configuration(masterPin, masterInverted)
+                        .idleMode(IdleMode.kBrake).voltageCompensation(true, nominalVoltage)
                         .currentLimiting(true, maxFreeSpeedCurrent, maxStallCurrent);
-        public static SparkMaxFactory.Configuration slaveConfig = SparkMaxFactory.Configuration
-                .mirrorWithCANID(masterConfig, slavePin);
+        public static SparkMaxFactory.Configuration slaveConfig =
+                SparkMaxFactory.Configuration.mirrorWithCANID(masterConfig, slavePin);
 
         public static ClosedLoopConfig pidConfig = new ClosedLoopConfig().configPID(kP, kI, kD)
-                .configFeedForward(kS, kV, kA).encoderTicksToUnits(encoderTicksToUnits).velocityThrehsold(75)
-                .encoderVelocityToRPM(encoderVelocityToRPM).encoderAccelerationToUnits(encoderVelocityToRPM);
+                .configFeedForward(kS, kV, kA).encoderTicksToUnits(encoderTicksToUnits)
+                .velocityThrehsold(75).encoderVelocityToRPM(encoderVelocityToRPM)
+                .encoderAccelerationToUnits(encoderVelocityToRPM);
 
         public static double calculateRPM(double distance) {
             return distance;
         }
+    }
+
+    public static class cHood {
+        public static int pwmPort = 2;
+        public static double minPosition = 0.5;
+        public static double maxPosition = 0.9;
     }
 
     /**
