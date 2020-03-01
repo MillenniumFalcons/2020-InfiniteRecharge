@@ -10,8 +10,8 @@ package team3647.frc2020.subsystems;
 import java.util.Objects;
 import team3647.frc2020.inputs.Limelight;
 import team3647.frc2020.inputs.Limelight.Data;
-import team3647.lib.utils.RollingAverage;
-import team3647.lib.utils.VisionTarget;
+import team3647.lib.util.RollingAverage;
+import team3647.lib.util.VisionTarget;
 import team3647.lib.wpi.HALMethods;
 
 /**
@@ -25,7 +25,8 @@ public class VisionController implements PeriodicSubsystem {
         public final double kCameraAngle;
         public final double kImageCaptureLatency;
 
-        public CamConstants(double goalHeight, double cameraHeight, double cameraAngle, double imageCaptureLatency) {
+        public CamConstants(double goalHeight, double cameraHeight, double cameraAngle,
+                double imageCaptureLatency) {
             this.kGoalHeight = goalHeight;
             this.kCameraHeight = cameraHeight;
             this.kCameraAngle = cameraAngle;
@@ -45,6 +46,7 @@ public class VisionController implements PeriodicSubsystem {
         public Limelight.LEDMode ledMode = Limelight.LEDMode.DEFAULT;
         public Limelight.CamMode camMode = Limelight.CamMode.VISION;
         public Limelight.StreamMode streamMode = Limelight.StreamMode.Limelight;
+        public Pipeline pipeline = Pipeline.CLOSE;
     }
 
     private final Limelight limelight;
@@ -59,12 +61,22 @@ public class VisionController implements PeriodicSubsystem {
     private RollingAverage skewAverage = new RollingAverage();
     private RollingAverage rangeAverage = new RollingAverage();
 
+    public enum Pipeline {
+        FAR(0), CLOSE(1);
+
+        public final int id;
+
+        Pipeline(int id) {
+            this.id = id;
+        }
+    }
+
     public VisionController(String camIP, CamConstants constants) {
         Objects.requireNonNull(camIP);
         Objects.requireNonNull(constants);
         limelight = new Limelight(camIP);
         m_constants = constants;
-
+        setPipeline(Pipeline.CLOSE);
     }
 
     @Override
@@ -151,6 +163,11 @@ public class VisionController implements PeriodicSubsystem {
 
     public void setLedMode(Limelight.LEDMode mode) {
         periodicIO.ledMode = mode;
+        outputsHaveChanged = true;
+    }
+
+    public void setPipeline(Pipeline pipeline) {
+        periodicIO.pipeline = pipeline;
         outputsHaveChanged = true;
     }
 

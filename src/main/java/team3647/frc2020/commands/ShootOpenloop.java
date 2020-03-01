@@ -1,13 +1,12 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* Copyright (c) 2019 FIRST. All Rights Reserved. */
+/* Open Source Software - may be modified and shared by FRC teams. The code */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
+/* the project. */
 /*----------------------------------------------------------------------------*/
 
 package team3647.frc2020.commands;
 
-import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.subsystems.Flywheel;
@@ -15,29 +14,34 @@ import team3647.frc2020.subsystems.Indexer;
 import team3647.frc2020.subsystems.KickerWheel;
 import team3647.lib.IndexerSignal;
 
-public class ShootOpenloop extends CommandBase {
+public abstract class ShootOpenloop extends CommandBase {
     private final Flywheel m_flywheel;
     private final KickerWheel m_kickerWheel;
     private final Indexer m_indexer;
     private boolean reachedVelOnce;
     private double motorOutputAtRPM = 1;
-    private final DoubleSupplier rpmSupplier;
-    private final DoubleSupplier kickerWheelOutputSupplier;
-    private double lastVelRequested;
-    private double velRequested;
+
+    private final double shooterRPM;
+    private final double kickerWheelOutput;
+    private final double percentIncrease;
+    private final IndexerSignal indexerSignal;
 
     // private final Roll
     /**
      * Shoot balls continuously while execute is ran
      */
-    public ShootOpenloop(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer, DoubleSupplier rpmSupplier,
-            DoubleSupplier kickerWheelOutputSupplier) {
+    public ShootOpenloop(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer,
+            double shooterRPM, double kickerWheelOutput, double percentIncrease,
+            IndexerSignal indexerSignal) {
         m_flywheel = flywheel;
         m_kickerWheel = kickerWheel;
         m_indexer = indexer;
-        this.rpmSupplier = rpmSupplier;
-        this.kickerWheelOutputSupplier = kickerWheelOutputSupplier;
         addRequirements(m_flywheel, m_kickerWheel, m_indexer);
+
+        this.shooterRPM = shooterRPM;
+        this.kickerWheelOutput = kickerWheelOutput;
+        this.percentIncrease = percentIncrease;
+        this.indexerSignal = indexerSignal;
     }
 
     // Called when the command is initially scheduled.
@@ -50,27 +54,21 @@ public class ShootOpenloop extends CommandBase {
     @Override
     public void execute() {
 
-        lastVelRequested = velRequested;
-        velRequested = rpmSupplier.getAsDouble();
-
-        if (Math.abs(lastVelRequested - velRequested) > 50) {
-            reachedVelOnce = false;
-        }
 
         // AUTO SHOT
-        m_kickerWheel.setOpenloop(kickerWheelOutputSupplier.getAsDouble());
+        m_kickerWheel.setOpenloop(kickerWheelOutput);
 
-        if (m_flywheel.getVelocity() > velRequested) {
+        if (m_flywheel.getVelocity() > shooterRPM) {
             motorOutputAtRPM = m_flywheel.getOutput();
             reachedVelOnce = true;
 
         } else if (!reachedVelOnce) {
-            m_flywheel.setRPM(velRequested);
+            m_flywheel.setRPM(shooterRPM);
         }
 
         if (reachedVelOnce) {
-            m_indexer.set(IndexerSignal.GO_FAST);
-            m_flywheel.setOpenloop(motorOutputAtRPM * 1.02);
+            m_indexer.set(indexerSignal);
+            m_flywheel.setOpenloop(motorOutputAtRPM * percentIncrease);
         }
 
     }

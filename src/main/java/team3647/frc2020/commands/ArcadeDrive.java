@@ -12,6 +12,7 @@ import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.subsystems.Drivetrain;
+import team3647.lib.DriveSignal;
 import team3647.lib.wpi.HALMethods;
 
 public class ArcadeDrive extends CommandBase {
@@ -25,8 +26,8 @@ public class ArcadeDrive extends CommandBase {
     /**
      * Creates a new ArcadeDrive.
      */
-    public ArcadeDrive(Drivetrain drivetrain, DoubleSupplier throttle, DoubleSupplier turn, BooleanSupplier scaleInputs,
-            BooleanSupplier shouldShift) {
+    public ArcadeDrive(Drivetrain drivetrain, DoubleSupplier throttle, DoubleSupplier turn,
+            BooleanSupplier scaleInputs, BooleanSupplier shouldShift) {
         // Use addRequirements() here to declare subsystem dependencies.
         m_drivetrain = drivetrain;
         this.shouldShift = shouldShift;
@@ -64,7 +65,9 @@ public class ArcadeDrive extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_drivetrain.arcadeDrive(m_throttle.getAsDouble(), m_turn.getAsDouble(), m_scaleInputs.getAsBoolean());
+        m_drivetrain.arcadeDrive(m_throttle.getAsDouble(), m_turn.getAsDouble(),
+        m_scaleInputs.getAsBoolean());
+        // m_drivetrain.setOpenLoop(new DriveSignal(m_throttle.getAsDouble(), 0));
         if (shouldShift.getAsBoolean() != m_drivetrain.isShifted()) {
             m_drivetrain.setShifter(shouldShift.getAsBoolean());
         }

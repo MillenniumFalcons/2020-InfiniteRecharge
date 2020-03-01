@@ -10,7 +10,7 @@ import team3647.lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 import team3647.lib.drivers.SparkMaxFactory;
 import team3647.lib.drivers.TalonSRXFactory;
 import team3647.lib.drivers.VictorSPXFactory;
-import team3647.lib.utils.RGB;
+import team3647.lib.util.RGB;
 
 public class Constants {
 
@@ -32,7 +32,12 @@ public class Constants {
         // volts
         public static final double kS = 0.261;
         public static final double kV = 2.62;
-        public static final double kA = 0.353;
+        // public static final double kA = 0.353;
+        public static final double kA = 0.15;
+
+        public static final double kP = 0;
+        public static final double kI = 0;
+        public static final double kD = 0;
 
         public static final double kTrackwidthMeters = 1.108081713274498;
         public static final double kTrackWidthMeters2 = .7239849047751171;
@@ -66,10 +71,10 @@ public class Constants {
 
         public static final ClosedLoopConfig leftMasterPIDConfig = new ClosedLoopConfig()
                 .encoderVelocityToRPM(gearboxReduction).encoderTicksToUnits(neoRotationsToMeters)
-                .maxVelocity(kMaxSpeedMetersPerSecond);
+                .maxVelocity(kMaxSpeedMetersPerSecond).configPID(kP, kI, kD);
         public static final ClosedLoopConfig rightMasterPIDConfig = new ClosedLoopConfig()
                 .encoderVelocityToRPM(gearboxReduction).encoderTicksToUnits(neoRotationsToMeters)
-                .maxVelocity(kMaxSpeedMetersPerSecond);
+                .maxVelocity(kMaxSpeedMetersPerSecond).configPID(kP, kI, kD);
 
     }
 
@@ -95,7 +100,7 @@ public class Constants {
 
     public static class cVisionController {
         // 8ft in meters
-        public static final double kGoalHeight = Units.inchesToMeters(97);
+        public static final double kGoalHeight = Units.inchesToMeters(98.25);
 
         // 30inches in meters
         public static final double kCameraHeight = Units.feetToMeters(3);
@@ -112,7 +117,7 @@ public class Constants {
         public static final double kPixelSize = 6;
 
         /** in degrees */
-        public static final double camAngle = 26;
+        public static final double camAngle = 23.3;
 
         public static final double kImageCaptureLatency = 11.0 / 1000.0; // miliseconds
 

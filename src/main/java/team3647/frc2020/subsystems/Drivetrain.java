@@ -65,9 +65,11 @@ public class Drivetrain implements PeriodicSubsystem {
 
     private boolean shifted;
 
-    public Drivetrain(Configuration leftMasterConfig, Configuration rightMasterConfig, Configuration leftSlaveConfig,
-            Configuration rightSlaveConfig, ClosedLoopConfig leftMasterPIDConfig, ClosedLoopConfig rightMasterPIDConfig,
-            int shifterPin, double kWheelDiameterMeters, double kS, double kV, double kA, int gyroCANID) {
+    public Drivetrain(Configuration leftMasterConfig, Configuration rightMasterConfig,
+            Configuration leftSlaveConfig, Configuration rightSlaveConfig,
+            ClosedLoopConfig leftMasterPIDConfig, ClosedLoopConfig rightMasterPIDConfig,
+            int shifterPin, double kWheelDiameterMeters, double kS, double kV, double kA,
+            int gyroCANID) {
         if (constructCount > 0) {
             throw new UnsupportedOperationException("Drivetrain was already initialized once");
         }
@@ -86,12 +88,13 @@ public class Drivetrain implements PeriodicSubsystem {
         leftEncoder = leftMaster.getEncoder();
         rightEncoder = rightMaster.getEncoder();
 
-        m_leftVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(leftMaster, leftEncoder, m_leftPIDConfig, 0);
-        m_rightVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(rightMaster, rightEncoder, m_rightPIDConfig,
-                0);
+        m_leftVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(leftMaster, leftEncoder,
+                m_leftPIDConfig, 0);
+        m_rightVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(rightMaster,
+                rightEncoder, m_rightPIDConfig, 0);
 
-        kEncoderVelocityToMetersPerSecond = m_leftPIDConfig.kEncoderVelocityToRPM * kWheelDiameterMeters * Math.PI
-                / 60.0;
+        kEncoderVelocityToMetersPerSecond =
+                m_leftPIDConfig.kEncoderVelocityToRPM * kWheelDiameterMeters * Math.PI / 60.0;
 
         m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
         feedforward = new SimpleMotorFeedforward(kS, kV, kA);
@@ -108,7 +111,7 @@ public class Drivetrain implements PeriodicSubsystem {
         /** Meters per second */
         public double rightVelocity;
 
-        public double ypr[] = new double[] { 0, 0, 0 };
+        public double ypr[] = new double[] {0, 0, 0};
 
         /** Meters */
         public double leftPosition;
@@ -134,7 +137,7 @@ public class Drivetrain implements PeriodicSubsystem {
 
     @Override
     public synchronized void init() {
-        setToBrake();
+        setToCoast();
         resetEncoders();
         m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
         initialized = true;
@@ -143,19 +146,23 @@ public class Drivetrain implements PeriodicSubsystem {
     @Override
     public synchronized void readPeriodicInputs() {
         try {
-            periodicIO.leftPosition = leftEncoder.getPosition() * m_leftPIDConfig.kEncoderTicksToUnits;
+            periodicIO.leftPosition =
+                    leftEncoder.getPosition() * m_leftPIDConfig.kEncoderTicksToUnits;
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
             reconstructLeftEncoder();
-            periodicIO.leftPosition = leftEncoder.getPosition() * m_leftPIDConfig.kEncoderTicksToUnits;
+            periodicIO.leftPosition =
+                    leftEncoder.getPosition() * m_leftPIDConfig.kEncoderTicksToUnits;
         }
 
         try {
-            periodicIO.rightPosition = rightEncoder.getPosition() * m_rightPIDConfig.kEncoderTicksToUnits;
+            periodicIO.rightPosition =
+                    rightEncoder.getPosition() * m_rightPIDConfig.kEncoderTicksToUnits;
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
             reconstructRightEncoder();
-            periodicIO.rightPosition = rightEncoder.getPosition() * m_rightPIDConfig.kEncoderTicksToUnits;
+            periodicIO.rightPosition =
+                    rightEncoder.getPosition() * m_rightPIDConfig.kEncoderTicksToUnits;
         }
 
         try {
@@ -167,11 +174,13 @@ public class Drivetrain implements PeriodicSubsystem {
         }
 
         try {
-            periodicIO.rightVelocity = rightEncoder.getVelocity() * kEncoderVelocityToMetersPerSecond;
+            periodicIO.rightVelocity =
+                    rightEncoder.getVelocity() * kEncoderVelocityToMetersPerSecond;
         } catch (NullPointerException e) {
             HALMethods.sendDSError(e.toString());
             reconstructRightEncoder();
-            periodicIO.rightVelocity = rightEncoder.getVelocity() * kEncoderVelocityToMetersPerSecond;
+            periodicIO.rightVelocity =
+                    rightEncoder.getVelocity() * kEncoderVelocityToMetersPerSecond;
         }
 
         m_gyro.getYawPitchRoll(periodicIO.ypr);
@@ -180,20 +189,21 @@ public class Drivetrain implements PeriodicSubsystem {
 
     private void reconstructLeftEncoder() {
         leftEncoder = leftMaster.getEncoder();
-        m_leftVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(leftMaster, leftEncoder, m_leftPIDConfig, 0);
+        m_leftVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(leftMaster, leftEncoder,
+                m_leftPIDConfig, 0);
     }
 
     private void reconstructRightEncoder() {
         rightEncoder = leftMaster.getEncoder();
-        m_rightVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(rightMaster, rightEncoder, m_rightPIDConfig,
-                0);
+        m_rightVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(rightMaster,
+                rightEncoder, m_rightPIDConfig, 0);
     }
 
     @Override
     public synchronized void writePeriodicOutputs() {
         if (shifted && Math.abs(periodicIO.leftOutput - periodicIO.rightOutput) < 0.0005) {
-            HALMethods.sendDSError("Left motor outout: " + periodicIO.leftOutput + " and right output: "
-                    + periodicIO.rightOutput + " are not equal!!");
+            HALMethods.sendDSError("Left motor outout: " + periodicIO.leftOutput
+                    + " and right output: " + periodicIO.rightOutput + " are not equal!!");
             HALMethods.sendDSError("Setting drivetrain to stop!!");
             periodicIO.leftOutput = 0;
             periodicIO.rightOutput = 0;
@@ -202,20 +212,32 @@ public class Drivetrain implements PeriodicSubsystem {
         }
 
         try {
-            m_leftVelocityPID.setReference(periodicIO.leftOutput, controlType, 0, periodicIO.leftFeedForward);
+            if (controlType == ControlType.kDutyCycle) {
+                leftMaster.set(periodicIO.leftOutput);
+            } else {
+                m_leftVelocityPID.setReference(periodicIO.leftOutput, controlType, 0,
+                        periodicIO.leftFeedForward);
+            }
         } catch (NullPointerException e) {
-            m_leftVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(leftMaster, leftEncoder, m_leftPIDConfig,
-                    0);
-            m_leftVelocityPID.setReference(periodicIO.leftOutput, controlType, 0, periodicIO.leftFeedForward);
+            m_leftVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(leftMaster,
+                    leftEncoder, m_leftPIDConfig, 0);
+            m_leftVelocityPID.setReference(periodicIO.leftOutput, controlType, 0,
+                    periodicIO.leftFeedForward);
             HALMethods.sendDSError(e.toString());
         }
 
         try {
-            m_rightVelocityPID.setReference(periodicIO.rightOutput, controlType, 0, periodicIO.rightFeedForward);
+            if (controlType == ControlType.kDutyCycle) {
+                rightMaster.set(periodicIO.rightOutput);
+            } else {
+                m_rightVelocityPID.setReference(periodicIO.rightOutput, controlType, 0,
+                        periodicIO.rightFeedForward);
+            }
         } catch (NullPointerException e) {
-            m_rightVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(rightMaster, rightEncoder,
-                    m_rightPIDConfig, 0);
-            m_rightVelocityPID.setReference(periodicIO.rightOutput, controlType, 0, periodicIO.rightFeedForward);
+            m_rightVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(rightMaster,
+                    rightEncoder, m_rightPIDConfig, 0);
+            m_rightVelocityPID.setReference(periodicIO.rightOutput, controlType, 0,
+                    periodicIO.rightFeedForward);
             HALMethods.sendDSError(e.toString());
         }
     }
@@ -224,7 +246,8 @@ public class Drivetrain implements PeriodicSubsystem {
     public void periodic() {
         PeriodicSubsystem.super.periodic();
         m_timeStamp = Timer.getFPGATimestamp();
-        m_odometry.update(Rotation2d.fromDegrees(getHeading()), periodicIO.leftPosition, periodicIO.rightPosition);
+        m_odometry.update(Rotation2d.fromDegrees(getHeading()), periodicIO.leftPosition,
+                periodicIO.rightPosition);
 
     }
 
@@ -391,8 +414,8 @@ public class Drivetrain implements PeriodicSubsystem {
     }
 
     /**
-     * Returns 0.0 if the given value is within the specified range around zero. The
-     * remaining range between the deadband and 1.0 is scaled from 0.0 to 1.0.
+     * Returns 0.0 if the given value is within the specified range around zero. The remaining range
+     * between the deadband and 1.0 is scaled from 0.0 to 1.0.
      *
      * @param value    value to clip
      * @param deadband range around zero
@@ -427,28 +450,30 @@ public class Drivetrain implements PeriodicSubsystem {
         SparkMaxUtil.checkError(rightMaster.setIdleMode(IdleMode.kBrake),
                 m_timeStamp + " Coudln't set right master to brake mode");
 
-        SparkMaxUtil.checkError(leftSlave.setIdleMode(IdleMode.kBrake),
-                m_timeStamp + " Coudln't set left slave to brake mode");
-        SparkMaxUtil.checkError(rightSlave.setIdleMode(IdleMode.kBrake),
-                m_timeStamp + " Coudln't set right slave to brake mode");
+        // SparkMaxUtil.checkError(leftSlave.setIdleMode(IdleMode.kBrake),
+        //         m_timeStamp + " Coudln't set left slave to brake mode");
+        // SparkMaxUtil.checkError(rightSlave.setIdleMode(IdleMode.kBrake),
+        //         m_timeStamp + " Coudln't set right slave to brake mode");
     }
 
     public synchronized void resetEncoders() {
         try {
-            SparkMaxUtil.checkError(leftEncoder.setPosition(0), m_timeStamp + " Couldn't reset left encoder");
+            SparkMaxUtil.checkError(leftEncoder.setPosition(0),
+                    m_timeStamp + " Couldn't reset left encoder");
         } catch (NullPointerException e) {
             leftEncoder = leftMaster.getEncoder();
-            m_leftVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(leftMaster, leftEncoder, m_leftPIDConfig,
-                    0);
+            m_leftVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(leftMaster,
+                    leftEncoder, m_leftPIDConfig, 0);
             HALMethods.sendDSError(e.toString());
         }
 
         try {
-            SparkMaxUtil.checkError(rightEncoder.setPosition(0), m_timeStamp + " Couldn't reset right encoder");
+            SparkMaxUtil.checkError(rightEncoder.setPosition(0),
+                    m_timeStamp + " Couldn't reset right encoder");
         } catch (NullPointerException e) {
             rightEncoder = rightMaster.getEncoder();
-            m_rightVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(rightMaster, rightEncoder,
-                    m_rightPIDConfig, 0);
+            m_rightVelocityPID = ClosedLoopFactory.createSparkMaxPIDController(rightMaster,
+                    rightEncoder, m_rightPIDConfig, 0);
             HALMethods.sendDSError(e.toString());
         }
         periodicIO = new PeriodicIO();

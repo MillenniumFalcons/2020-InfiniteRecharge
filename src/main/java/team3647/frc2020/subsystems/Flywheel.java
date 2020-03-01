@@ -10,7 +10,7 @@ package team3647.frc2020.subsystems;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import team3647.lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
-import team3647.lib.utils.RollingAverage;
+import team3647.lib.util.RollingAverage;
 import team3647.lib.drivers.SparkMaxFactory;
 
 /**
@@ -21,8 +21,8 @@ public class Flywheel extends SparkMaxSubsystem {
     private final CANSparkMax follower;
     private final RollingAverage velocityAverage;
 
-    public Flywheel(SparkMaxFactory.Configuration masterConfig, SparkMaxFactory.Configuration followerConfig,
-            ClosedLoopConfig pidConfig) {
+    public Flywheel(SparkMaxFactory.Configuration masterConfig,
+            SparkMaxFactory.Configuration followerConfig, ClosedLoopConfig pidConfig) {
         super(masterConfig, pidConfig);
         super.enableVelocityFiltering();
         follower = addFollower(followerConfig, true);

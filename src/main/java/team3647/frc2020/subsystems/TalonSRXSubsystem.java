@@ -17,7 +17,7 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import team3647.lib.drivers.TalonSRXUtil;
 import team3647.lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
-import team3647.lib.utils.RollingAverage;
+import team3647.lib.util.RollingAverage;
 import team3647.lib.drivers.ClosedLoopFactory;
 import team3647.lib.drivers.TalonSRXFactory;
 import team3647.lib.wpi.HALMethods;

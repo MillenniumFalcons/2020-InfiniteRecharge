@@ -7,88 +7,66 @@
 
 package team3647.frc2020.commands;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.Function;
-
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.subsystems.Flywheel;
 import team3647.frc2020.subsystems.Indexer;
 import team3647.frc2020.subsystems.KickerWheel;
 import team3647.lib.IndexerSignal;
-import team3647.lib.wpi.Timer;
 
-public class ShootContinuously extends CommandBase {
-
+public class ShootClosedLoop extends CommandBase {
     private final Flywheel m_flywheel;
     private final KickerWheel m_kickerWheel;
     private final Indexer m_indexer;
-    private final DoubleSupplier m_distanceToTarget;
-    private final Timer voltageTooLowTimer = new Timer();
-    private final BooleanSupplier shootAnyways;
-    private double distanceToTargetMeters;
-    private final Function<Double, Double> m_calculateRPMFromDistance;
-    private boolean reachedVelOnce = false;
-    private double motorOutputAtRPM = .7;
+    private final double shooterRPM;
+    private final double kickerWheelOutput;
+    private final IndexerSignal signalOnShoot;
 
     /**
-     * Shoot balls continuously while execute is ran
+     * Creates a new ShootClosedLoop.
      */
-    public ShootContinuously(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer, BooleanSupplier shootAnyways,
-            Function<Double, Double> calculateRPMFromDistance, DoubleSupplier distanceToTarget) {
+    public ShootClosedLoop(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer,
+            double shooterRPM, double kickerWheelOutput, IndexerSignal signalOnShoot) {
+        // Use addRequirements() here to declare subsystem dependencies.
         m_flywheel = flywheel;
         m_kickerWheel = kickerWheel;
         m_indexer = indexer;
-        m_distanceToTarget = distanceToTarget;
-        m_calculateRPMFromDistance = calculateRPMFromDistance;
-        this.shootAnyways = shootAnyways;
 
+        this.kickerWheelOutput = kickerWheelOutput;
+        this.shooterRPM = shooterRPM;
+        this.signalOnShoot = signalOnShoot;
         addRequirements(m_flywheel, m_kickerWheel, m_indexer);
     }
 
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        voltageTooLowTimer.stop();
-        voltageTooLowTimer.start();
-        reachedVelOnce = false;
     }
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        distanceToTargetMeters = m_distanceToTarget.getAsDouble();
+        m_kickerWheel.setOpenloop(kickerWheelOutput);
 
-        // Far shot from behind cp:
-        m_kickerWheel.setOpenloop(1);
+        m_flywheel.setRPM(shooterRPM);
 
-        m_flywheel.setRPM(7300);
-
-        if (m_flywheel.reachedTargetVelocity() || shootAnyways.getAsBoolean()) {
+        if (m_flywheel.reachedTargetVelocity()) {
             if (m_indexer.getBannerSensorValue()) {
-                m_indexer.set(IndexerSignal.GO_SLOW);
+                m_indexer.set(signalOnShoot);
             } else {
-                m_indexer.set(IndexerSignal.GO);
+                m_indexer.set(signalOnShoot);
             }
-            voltageTooLowTimer.reset();
         } else {
-            if (!voltageTooLowTimer.isRunning()) {
-                voltageTooLowTimer.start();
-            }
             if (m_indexer.getBannerSensorValue()) {
                 m_indexer.set(IndexerSignal.TUNNELHOLD_GO);
             } else {
                 m_indexer.set(IndexerSignal.GO_SLOW);
             }
         }
-
     }
 
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        m_flywheel.end();
-        m_kickerWheel.end();
     }
 
     // Returns true when the command should end.

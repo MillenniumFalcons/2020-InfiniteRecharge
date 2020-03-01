@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.controller.RamseteController;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
@@ -29,12 +30,14 @@ import team3647.frc2020.commands.ArcadeDrive;
 import team3647.frc2020.commands.ExtendIntakeToGround;
 import team3647.frc2020.commands.GroundIntake;
 import team3647.frc2020.commands.IndexerManual;
+import team3647.frc2020.commands.InitiationLineShot;
 import team3647.frc2020.commands.LoadBalls;
 import team3647.frc2020.commands.LoadingStationIntake;
 import team3647.frc2020.commands.OrganizeFeeder;
 import team3647.frc2020.commands.RemoveBalls;
-import team3647.frc2020.commands.ShootContinuously;
+import team3647.frc2020.commands.ShootOpenloop;
 import team3647.frc2020.commands.StowIntakeAndOrganizeFeeder;
+import team3647.frc2020.commands.TrenchShot;
 import team3647.frc2020.commands.TurretManual;
 import team3647.frc2020.commands.TurretMotionMagic;
 import team3647.frc2020.subsystems.Drivetrain;
@@ -46,6 +49,7 @@ import team3647.frc2020.subsystems.KickerWheel;
 import team3647.frc2020.subsystems.Turret;
 import team3647.frc2020.subsystems.VisionController;
 import team3647.frc2020.inputs.Joysticks;
+import team3647.frc2020.inputs.Limelight.LEDMode;
 import team3647.lib.GroupPrinter;
 import team3647.lib.wpi.Compressor;
 import team3647.lib.wpi.PDP;
@@ -124,6 +128,12 @@ public class RobotContainer {
     private final CommandScheduler m_commandScheduler = CommandScheduler.getInstance();
 
     public RobotContainer() {
+        SmartDashboard.putNumber("requested left vel", 0);
+        SmartDashboard.putNumber("requested right Vel", 0);
+
+        SmartDashboard.putNumber("actual left vel", 0);
+        SmartDashboard.putNumber("actual right Vel", 0);
+
         // setTestingIndexer();
         airCompressor.start();
         pdp.clearStickyFaults();
@@ -137,16 +147,25 @@ public class RobotContainer {
         m_commandScheduler.setDefaultCommand(m_turret,
                 new TurretManual(m_turret, coController::getLeftStickX));
         m_indexer.setDefaultCommand(new IndexerManual(m_indexer, coController::getRightStickY));
-        m_printer.addDouble("shooter rpm", m_flywheel::getVelocity);
         m_printer.addDouble("tunnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
         m_printer.addDouble("funnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
+
+
+
+        m_printer.addDouble("shooter rpm", m_flywheel::getVelocity);
         m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrent);
-        m_printer.addDouble("limelight angle", m_visionController::getFilteredYaw);
+        m_printer.addDouble("turret distance to target", m_visionController::getFilteredDistance);
         m_printer.addDouble("shooter applied output", m_flywheel::getOutput);
+        m_printer.addDouble("drivetrain distance", m_drivetrain::getAverageEncoderDistance);
+
+        m_printer.addDouble("leftright diff vel", () -> {
+            return m_drivetrain.getLeftPosition() - m_drivetrain.getRightPosition();
+        });
+
         configButtonBindings();
     }
 
@@ -176,11 +195,14 @@ public class RobotContainer {
 
         coController.rightBumper
                 .whenActive(new AimTurret(m_turret, m_visionController::getFilteredYaw));
-        coController.rightTrigger.whenActive(new ParallelCommandGroup(
-                new AimTurret(m_turret, m_visionController::getFilteredYaw),
-                new ShootContinuously(m_flywheel, m_kickerWheel, m_indexer,
-                        coController.buttonB::get, Constants.cFlywheel::calculateRPM,
-                        m_visionController::getFilteredDistance)));
+        // coController.rightTrigger.whenActive(new ParallelCommandGroup(
+        // new AimTurret(m_turret, m_visionController::getFilteredYaw),
+        // new ShootContinuously(m_flywheel, m_kickerWheel, m_indexer,
+        // coController.buttonB::get, Constants.cFlywheel::calculateRPM,
+        // m_visionController::getFilteredDistance)));
+
+        coController.rightTrigger
+                .whenActive(new TrenchShot(m_flywheel, m_kickerWheel, m_indexer));
 
         coController.rightTrigger.whenReleased(new RunCommand(() -> {
             m_flywheel.end();
@@ -202,7 +224,7 @@ public class RobotContainer {
         }, m_hood));
 
         coController.dPadRight.whenPressed(new RunCommand(() -> {
-            m_hood.setPosition(.6);
+            m_hood.setPosition(.62);
         }, m_hood));
 
         coController.dPadDown.whenPressed(new RunCommand(() -> {
@@ -233,5 +255,6 @@ public class RobotContainer {
         m_kickerWheel.init();
         m_turret.init();
         m_visionController.init();
+        m_visionController.setLedMode(LEDMode.ON);
     }
 }
