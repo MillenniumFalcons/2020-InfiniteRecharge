@@ -51,7 +51,6 @@ public class VisionController implements PeriodicSubsystem {
 
     private final Limelight limelight;
     private final CamConstants m_constants;
-    private VisionTarget latestTarget;
     private boolean outputsHaveChanged = false;
     private PeriodicIO periodicIO = new PeriodicIO();
 
@@ -83,18 +82,19 @@ public class VisionController implements PeriodicSubsystem {
     public void readPeriodicInputs() {
         periodicIO.validTarget = (int) limelight.get(Data.VALID_TARGET) == 1;
 
-        periodicIO.x = limelight.get(Data.X);
-        xAverage.add(periodicIO.x);
+        if (periodicIO.validTarget) {
+            periodicIO.x = limelight.get(Data.X);
+            xAverage.add(periodicIO.x);
 
-        periodicIO.y = limelight.get(Data.Y);
-        yAverage.add(periodicIO.y);
+            periodicIO.y = limelight.get(Data.Y);
+            yAverage.add(periodicIO.y);
 
-        periodicIO.area = limelight.get(Data.AREA);
-        areaAverage.add(periodicIO.area);
+            periodicIO.area = limelight.get(Data.AREA);
+            areaAverage.add(periodicIO.area);
 
-        periodicIO.skew = limelight.get(Data.SKEW);
-        skewAverage.add(periodicIO.skew);
-
+            periodicIO.skew = limelight.get(Data.SKEW);
+            skewAverage.add(periodicIO.skew);
+        }
         periodicIO.latency = limelight.get(Data.LATNECY) + m_constants.kImageCaptureLatency;
 
         periodicIO.range = calculateRange(getFilteredPitch());

@@ -9,20 +9,20 @@ package team3647.frc2020.commands;
 
 import java.util.function.DoubleSupplier;
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import team3647.frc2020.subsystems.Hood;
+import team3647.frc2020.subsystems.Flywheel;
 
-public class MoveHood extends CommandBase {
-    private final Hood m_hood;
-    private final DoubleSupplier hoodPosition;
-
+public class AccelerateFlywheelKickerWheel extends CommandBase {
+    private final Flywheel m_flywheel;
+    private final DoubleSupplier flywheelRPM;
     /**
-     * Creates a new MoveHood.
+     * Creates a new AccelerateFlywheel.
      */
-    public MoveHood(Hood hood, DoubleSupplier hoodPosition) {
+    public AccelerateFlywheelKickerWheel(Flywheel flywheel,
+            DoubleSupplier flywheelRPM) {
+        m_flywheel = flywheel;
+        this.flywheelRPM = flywheelRPM;
         // Use addRequirements() here to declare subsystem dependencies.
-        m_hood = hood;
-        this.hoodPosition = hoodPosition;
-        addRequirements(m_hood);
+        addRequirements(m_flywheel);
     }
 
     // Called when the command is initially scheduled.
@@ -33,7 +33,7 @@ public class MoveHood extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_hood.setPosition(hoodPosition.getAsDouble());
+        m_flywheel.setRPM(flywheelRPM.getAsDouble());
     }
 
     // Called once the command ends or is interrupted.
@@ -44,6 +44,6 @@ public class MoveHood extends CommandBase {
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return false;
+        return m_flywheel.reachedTargetVelocity();
     }
 }

@@ -4,12 +4,15 @@ import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.revrobotics.CANSparkMax.IdleMode;
 
 import edu.wpi.first.wpilibj.kinematics.DifferentialDriveKinematics;
-import edu.wpi.first.wpilibj.util.Units;
+import edu.wpi.first.wpiutil.math.MathUtil;
+import team3647.lib.util.Units;
 import team3647.frc2020.subsystems.VisionController;
 import team3647.lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 import team3647.lib.drivers.SparkMaxFactory;
 import team3647.lib.drivers.TalonSRXFactory;
 import team3647.lib.drivers.VictorSPXFactory;
+import team3647.lib.util.InterpolatingDouble;
+import team3647.lib.util.InterpolatingTreeMap;
 import team3647.lib.util.RGB;
 
 public class Constants {
@@ -30,22 +33,23 @@ public class Constants {
         public static final double kWheelDiameter = .1524;
 
         // volts
-        public static final double kS = 0.261;
+        public static final double kS = 0.214;
         public static final double kV = 2.62;
-        // public static final double kA = 0.353;
-        public static final double kA = 0.15;
+        public static final double kA = 0.42;
+        // public static final double kA = 0.15;
 
         public static final double kP = 0;
         public static final double kI = 0;
         public static final double kD = 0;
 
-        public static final double kTrackwidthMeters = 1.108081713274498;
-        public static final double kTrackWidthMeters2 = .7239849047751171;
+        public static final double onBoardkP = 14.8;
+
+        public static final double kTrackwidthMeters = 0.6455447508046545;
         public static final DifferentialDriveKinematics kDriveKinematics =
                 new DifferentialDriveKinematics(kTrackwidthMeters);
 
-        public static final double kMaxSpeedMetersPerSecond = 3;
-        public static final double kMaxAccelerationMetersPerSecondSquared = 3.0;
+        public static final double kMaxSpeedMetersPerSecond = 1;
+        public static final double kMaxAccelerationMetersPerSecondSquared = 2;
 
         public static final double maxVoltage = 11.0;
         public static final double gearboxReduction = 9.0 / 42.0 * 24.0 / 50.0;
@@ -83,7 +87,7 @@ public class Constants {
         public static final int innerPistonsPin = 3;
         public static final int intakeMotorPin = 8;
 
-        public static final boolean inverted = false;
+        public static final boolean inverted = true;
         public static TalonSRXFactory.Configuration intakeMotorConfig =
                 new TalonSRXFactory.Configuration(intakeMotorPin, inverted)
                         .configOpenLoopRampRate(.3);
@@ -100,10 +104,10 @@ public class Constants {
 
     public static class cVisionController {
         // 8ft in meters
-        public static final double kGoalHeight = Units.inchesToMeters(98.25);
+        public static final double kGoalHeight = Units.inches_to_meters(98.25);
 
         // 30inches in meters
-        public static final double kCameraHeight = Units.feetToMeters(3);
+        public static final double kCameraHeight = Units.feet_to_meters(3);
 
         // can be either 75 or 56 degrees depending on the lens setting used
         public static final double kFOV = 75;
@@ -179,27 +183,27 @@ public class Constants {
     }
 
     public static class cIndexer {
-        public static final int funnelPin = 22;
+        public static final int PP_VerticalPin = 22;
         public static final int tunnelPin = 23;
-        public static final int rollersPin = 24;
+        public static final int rollers_verticalPin = 24;
         public static final int bannerSensorPin = 1;
 
-        public static final int funnelPDPSlot = 10;
+        public static final int PP_VerticalPDPSlot = 10;
         public static final int tunnelPDPSlot = 8;
 
-        public static boolean funnelInverted = true;
+        public static boolean PP_VerticalInverted = false;
         public static boolean tunnelInverted = false;
-        public static boolean rollersInverted = false;
+        public static boolean rollers_verticalInverted = false;
 
-        public static VictorSPXFactory.Configuration funnelConfig =
-                new VictorSPXFactory.Configuration(funnelPin).setInverted(funnelInverted)
+        public static VictorSPXFactory.Configuration PP_VerticalConfig =
+                new VictorSPXFactory.Configuration(PP_VerticalPin).setInverted(PP_VerticalInverted)
                         .configOpenLoopRampRate(.3).setPDPSlot(10);
 
         public static VictorSPXFactory.Configuration tunnelConfig =
                 new VictorSPXFactory.Configuration(tunnelPin).setInverted(tunnelInverted)
                         .setPDPSlot(8);
-        public static VictorSPXFactory.Configuration rollersConfig =
-                new VictorSPXFactory.Configuration(rollersPin).setInverted(rollersInverted)
+        public static VictorSPXFactory.Configuration rollers_verticalConfig =
+                new VictorSPXFactory.Configuration(rollers_verticalPin).setInverted(rollers_verticalInverted)
                         .configOpenLoopRampRate(.3);
 
     }
@@ -235,6 +239,10 @@ public class Constants {
         // .configFeedForward(kS, kV, kA).encoderTicksToUnits(encoderTicksToUnits)
         // .encoderVelocityToRPM(encoderVelocityToRPM)
         // .encoderAccelerationToUnits(encoderVelocityToRPM);
+
+        public static double getFlywheelOutputFromFlywheelRPM(double rpm) {
+            return MathUtil.clamp(rpm / 2 * 0.000111111, .45, 1);
+        }
     }
 
     public static class cFlywheel {
@@ -279,12 +287,53 @@ public class Constants {
         public static double calculateRPM(double distance) {
             return distance;
         }
+
+        public static double[][] kFlywheelDistanceRPM =
+                {{Units.feet_to_meters(11.33), 3650}, {Units.feet_to_meters(15), 4500},
+                        {Units.feet_to_meters(20), 5400}, {Units.feet_to_meters(25), 6300}};
+
+
+
+        public static InterpolatingTreeMap<InterpolatingDouble, InterpolatingDouble> kFlywheelAutoAimMap =
+                new InterpolatingTreeMap<>();
+
+        static {
+            for (double[] pair : kFlywheelDistanceRPM) {
+                kFlywheelAutoAimMap.put(new InterpolatingDouble(pair[0]),
+                        new InterpolatingDouble(pair[1]));
+            }
+        }
+
+        public static double getFlywheelRPM(double range) {
+            InterpolatingDouble d =
+                    kFlywheelAutoAimMap.getInterpolated(new InterpolatingDouble(range));
+
+            return d == null ? 6000 : MathUtil.clamp(d.value, 2000, 8000);
+        }
     }
 
     public static class cHood {
         public static int pwmPort = 2;
         public static double minPosition = 0.5;
         public static double maxPosition = 0.9;
+
+        public static double[][] kHoodDistancePosition =
+                {{Units.feet_to_meters(11.33), .54}, {Units.feet_to_meters(15), .545},
+                        {Units.feet_to_meters(20), .55}, {Units.feet_to_meters(25), .56}};
+
+        public static InterpolatingTreeMap<InterpolatingDouble, InterpolatingDouble> kHoodAutoAimMap =
+                new InterpolatingTreeMap<>();
+        static {
+            for (double[] pair : kHoodDistancePosition) {
+                kHoodAutoAimMap.put(new InterpolatingDouble(pair[0]),
+                        new InterpolatingDouble(pair[1]));
+            }
+        }
+
+        public static double getHoodPosition(double range) {
+            InterpolatingDouble d = kHoodAutoAimMap.getInterpolated(new InterpolatingDouble(range));
+            return d == null ? .61 : MathUtil.clamp(d.value, .5, .7);
+        }
     }
 
     /**

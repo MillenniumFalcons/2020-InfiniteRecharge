@@ -41,6 +41,10 @@ public class Hood implements PeriodicSubsystem {
         periodicIO.demand = MathUtil.clamp(Math.abs(pos), minPosition, maxPosition);
     }
 
+    public double getAppliedPosition() {
+        return periodicIO.demand;
+    }
+
     @Override
     public String getName() {
         return "Hood";

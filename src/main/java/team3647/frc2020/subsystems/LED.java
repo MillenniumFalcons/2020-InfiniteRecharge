@@ -5,22 +5,23 @@
 /* the project. */
 /*----------------------------------------------------------------------------*/
 
-package team3647.lib.util;
+package team3647.frc2020.subsystems;
 
-import edu.wpi.first.wpilibj.geometry.Pose2d;
+import com.ctre.phoenix.CANifier;
 
 /**
- * Pose2d with a timestamp
+ * Add your docs here.
  */
-public class TimeStampedRobotPose extends TimestampedData {
-    private final Pose2d m_pose;
+public class LED implements PeriodicSubsystem {
 
-    public TimeStampedRobotPose(double timestamp, Pose2d pose) {
-        super(timestamp);
-        this.m_pose = pose;
+    private final CANifier m_CANifier;
+
+    public LED(int canifierPin) {
+        m_CANifier = new CANifier(canifierPin);
     }
 
-    public Pose2d getPose() {
-        return m_pose;
+    @Override
+    public String getName() {
+      return "LED";
     }
 }

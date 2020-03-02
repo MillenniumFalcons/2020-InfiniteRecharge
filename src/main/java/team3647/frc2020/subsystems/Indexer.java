@@ -21,9 +21,9 @@ import team3647.lib.wpi.HALMethods;
  */
 public class Indexer implements PeriodicSubsystem {
 
-    private final VictorSPX funnel;
+    private final VictorSPX PP_Vertical;
     private final VictorSPX tunnel;
-    private final VictorSPX rollers;
+    private final VictorSPX rollers_vertical;
 
     private final int funnelPDPSlot;
     private final int tunnelPDPSlot;
@@ -57,9 +57,9 @@ public class Indexer implements PeriodicSubsystem {
         if (error) {
             throw new NullPointerException("1 or more of the arguments to Indexer constructor were null");
         } else {
-            funnel = VictorSPXFactory.createVictor(funnelConfig);
+            PP_Vertical = VictorSPXFactory.createVictor(funnelConfig);
             tunnel = VictorSPXFactory.createVictor(tunnelConfig);
-            rollers = VictorSPXFactory.createVictor(rollersConfig);
+            rollers_vertical = VictorSPXFactory.createVictor(rollersConfig);
             this.getCurrent = getCurrent;
         }
 
@@ -97,16 +97,16 @@ public class Indexer implements PeriodicSubsystem {
             return;
         }
         if (getCurrent.apply(funnelPDPSlot) > 30) {
-            funnel.set(ControlMode.PercentOutput, signal.getFunnelOutput() * .5);
+            PP_Vertical.set(ControlMode.PercentOutput, signal.getPP_VerticalOutput() * .5);
         } else {
-            funnel.set(ControlMode.PercentOutput, signal.getFunnelOutput());
+            PP_Vertical.set(ControlMode.PercentOutput, signal.getPP_VerticalOutput());
         }
         if (getCurrent.apply(tunnelPDPSlot) > 30) {
             tunnel.set(ControlMode.PercentOutput, signal.getTunnelOutput() * .5);
         } else {
             tunnel.set(ControlMode.PercentOutput, signal.getTunnelOutput());
         }
-        rollers.set(ControlMode.PercentOutput, signal.getRollersOutput());
+        rollers_vertical.set(ControlMode.PercentOutput, signal.getRollers_verticalOutput());
     }
 
     @Override

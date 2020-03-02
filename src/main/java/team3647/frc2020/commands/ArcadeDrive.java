@@ -65,8 +65,10 @@ public class ArcadeDrive extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_drivetrain.arcadeDrive(m_throttle.getAsDouble(), m_turn.getAsDouble(),
-        m_scaleInputs.getAsBoolean());
+        // m_drivetrain.arcadeDrive(m_throttle.getAsDouble(), m_turn.getAsDouble(),
+        // m_scaleInputs.getAsBoolean());
+        m_drivetrain.setVelocity(
+                DriveSignal.fromControls(m_throttle.getAsDouble(), -m_turn.getAsDouble()));
         // m_drivetrain.setOpenLoop(new DriveSignal(m_throttle.getAsDouble(), 0));
         if (shouldShift.getAsBoolean() != m_drivetrain.isShifted()) {
             m_drivetrain.setShifter(shouldShift.getAsBoolean());

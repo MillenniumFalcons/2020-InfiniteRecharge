@@ -7,6 +7,8 @@
 
 package team3647.frc2020.commands;
 
+import java.util.function.DoubleSupplier;
+import java.util.function.Function;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.subsystems.Flywheel;
 import team3647.frc2020.subsystems.Indexer;
@@ -17,15 +19,16 @@ public class ShootClosedLoop extends CommandBase {
     private final Flywheel m_flywheel;
     private final KickerWheel m_kickerWheel;
     private final Indexer m_indexer;
-    private final double shooterRPM;
-    private final double kickerWheelOutput;
+    private final DoubleSupplier shooterRPM;
+    private final Function<Double, Double> kickerWheelOutput;
     private final IndexerSignal signalOnShoot;
 
     /**
      * Creates a new ShootClosedLoop.
      */
     public ShootClosedLoop(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer,
-            double shooterRPM, double kickerWheelOutput, IndexerSignal signalOnShoot) {
+            DoubleSupplier shooterRPM, Function<Double, Double> kickerWheelOutput,
+            IndexerSignal signalOnShoot) {
         // Use addRequirements() here to declare subsystem dependencies.
         m_flywheel = flywheel;
         m_kickerWheel = kickerWheel;
@@ -45,9 +48,9 @@ public class ShootClosedLoop extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_kickerWheel.setOpenloop(kickerWheelOutput);
+        m_kickerWheel.setOpenloop(kickerWheelOutput.apply(m_flywheel.getVelocity()));
 
-        m_flywheel.setRPM(shooterRPM);
+        m_flywheel.setRPM(shooterRPM.getAsDouble());
 
         if (m_flywheel.reachedTargetVelocity()) {
             if (m_indexer.getBannerSensorValue()) {

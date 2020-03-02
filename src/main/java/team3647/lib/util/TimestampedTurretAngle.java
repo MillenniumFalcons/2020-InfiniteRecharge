@@ -5,7 +5,7 @@
 /* the project. */
 /*----------------------------------------------------------------------------*/
 
-package team3647.lib.utils;
+package team3647.lib.util;
 
 /**
  * Add your docs here.

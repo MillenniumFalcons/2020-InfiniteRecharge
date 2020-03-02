@@ -17,6 +17,7 @@ public class GroupPrinter implements Subsystem {
     ArrayList<String> keys = new ArrayList<>();
 
     public synchronized void addDouble(String key, DoubleSupplier function) {
+        SmartDashboard.putNumber(key, 0);
         if (key != null && function != null) {
             toPrint.add(function);
             keys.add(key);

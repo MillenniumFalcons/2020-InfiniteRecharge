@@ -5,7 +5,7 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-package team3647.lib.utils;
+package team3647.lib.util;
 
 import static team3647.frc2020.robot.Constants.cPPSpinner;
 

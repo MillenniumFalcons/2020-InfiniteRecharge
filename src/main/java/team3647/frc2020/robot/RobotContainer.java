@@ -13,11 +13,13 @@ import edu.wpi.first.wpilibj.controller.RamseteController;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
 import edu.wpi.first.wpilibj.trajectory.constraint.DifferentialDriveVoltageConstraint;
+import edu.wpi.first.wpilibj.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -27,6 +29,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import team3647.frc2020.commands.AimTurret;
 import team3647.frc2020.commands.ArcadeDrive;
+import team3647.frc2020.commands.AutoAimTurretHood;
 import team3647.frc2020.commands.ExtendIntakeToGround;
 import team3647.frc2020.commands.GroundIntake;
 import team3647.frc2020.commands.IndexerManual;
@@ -35,9 +38,9 @@ import team3647.frc2020.commands.LoadBalls;
 import team3647.frc2020.commands.LoadingStationIntake;
 import team3647.frc2020.commands.OrganizeFeeder;
 import team3647.frc2020.commands.RemoveBalls;
+import team3647.frc2020.commands.ShootClosedLoop;
 import team3647.frc2020.commands.ShootOpenloop;
 import team3647.frc2020.commands.StowIntakeAndOrganizeFeeder;
-import team3647.frc2020.commands.TrenchShot;
 import team3647.frc2020.commands.TurretManual;
 import team3647.frc2020.commands.TurretMotionMagic;
 import team3647.frc2020.subsystems.Drivetrain;
@@ -50,7 +53,9 @@ import team3647.frc2020.subsystems.Turret;
 import team3647.frc2020.subsystems.VisionController;
 import team3647.frc2020.inputs.Joysticks;
 import team3647.frc2020.inputs.Limelight.LEDMode;
+import team3647.lib.DriveSignal;
 import team3647.lib.GroupPrinter;
+import team3647.lib.IndexerSignal;
 import team3647.lib.wpi.Compressor;
 import team3647.lib.wpi.PDP;
 
@@ -80,8 +85,8 @@ public class RobotContainer {
     private final Flywheel m_flywheel = new Flywheel(Constants.cFlywheel.masterConfig,
             Constants.cFlywheel.slaveConfig, Constants.cFlywheel.pidConfig);
 
-    private final Indexer m_indexer = new Indexer(Constants.cIndexer.funnelConfig,
-            Constants.cIndexer.tunnelConfig, Constants.cIndexer.rollersConfig,
+    private final Indexer m_indexer = new Indexer(Constants.cIndexer.PP_VerticalConfig,
+            Constants.cIndexer.tunnelConfig, Constants.cIndexer.rollers_verticalConfig,
             Constants.cIndexer.bannerSensorPin, pdp::getCurrent);
 
     private final Intake m_intake = new Intake(Constants.cIntake.intakeMotorConfig,
@@ -112,28 +117,22 @@ public class RobotContainer {
                             // Add kinematics to ensure max speed is actually obeyed
                             .setKinematics(Constants.cDrivetrain.kDriveKinematics)
                             // Apply the voltage constraint
-                            .addConstraint(autoVoltageConstraint).setReversed(true);
+                            .addConstraint(autoVoltageConstraint).setReversed(false);
 
     // An example trajectory to follow. All units in meters.
-    Trajectory sectorLineTo2Balls = TrajectoryGenerator.generateTrajectory(
+    Trajectory testTrajectory = TrajectoryGenerator.generateTrajectory(
             // Start at the origin facing the +X direction
             new Pose2d(0, 0, new Rotation2d(0)),
-
-            List.of(),
-
-            new Pose2d(-3.048, 0, new Rotation2d(0)),
+            // Pass through these two interior waypoints, making an 's' curve path
+            List.of(new Translation2d(1, 1)),
+            // End 3 meters straight ahead of where we started, facing forward
+            new Pose2d(3, 0, new Rotation2d(0)),
             // Pass config
             trajectoryConfig);
 
     private final CommandScheduler m_commandScheduler = CommandScheduler.getInstance();
 
     public RobotContainer() {
-        SmartDashboard.putNumber("requested left vel", 0);
-        SmartDashboard.putNumber("requested right Vel", 0);
-
-        SmartDashboard.putNumber("actual left vel", 0);
-        SmartDashboard.putNumber("actual right Vel", 0);
-
         // setTestingIndexer();
         airCompressor.start();
         pdp.clearStickyFaults();
@@ -147,24 +146,23 @@ public class RobotContainer {
         m_commandScheduler.setDefaultCommand(m_turret,
                 new TurretManual(m_turret, coController::getLeftStickX));
         m_indexer.setDefaultCommand(new IndexerManual(m_indexer, coController::getRightStickY));
+
         m_printer.addDouble("tunnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
         m_printer.addDouble("funnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
-
-
-
-        m_printer.addDouble("shooter rpm", m_flywheel::getVelocity);
+        m_printer.addDouble("shooter rpm based on distance", () -> {
+            return Constants.cFlywheel.getFlywheelRPM(m_visionController.getFilteredDistance());
+        });
         m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrent);
+        m_printer.addDouble("hoodPosition", m_hood::getAppliedPosition);
         m_printer.addDouble("turret distance to target", m_visionController::getFilteredDistance);
         m_printer.addDouble("shooter applied output", m_flywheel::getOutput);
-        m_printer.addDouble("drivetrain distance", m_drivetrain::getAverageEncoderDistance);
+        m_printer.addDouble("drivetrain left velocity", m_drivetrain::getLeftVelocity);
+        m_printer.addDouble("heading", m_drivetrain::getHeading);
 
-        m_printer.addDouble("leftright diff vel", () -> {
-            return m_drivetrain.getLeftPosition() - m_drivetrain.getRightPosition();
-        });
 
         configButtonBindings();
     }
@@ -193,16 +191,20 @@ public class RobotContainer {
             m_intake.extendInner();
         }, m_indexer, m_intake, m_kickerWheel).withTimeout(.5));
 
-        coController.rightBumper
-                .whenActive(new AimTurret(m_turret, m_visionController::getFilteredYaw));
-        // coController.rightTrigger.whenActive(new ParallelCommandGroup(
-        // new AimTurret(m_turret, m_visionController::getFilteredYaw),
-        // new ShootContinuously(m_flywheel, m_kickerWheel, m_indexer,
-        // coController.buttonB::get, Constants.cFlywheel::calculateRPM,
-        // m_visionController::getFilteredDistance)));
+        coController.rightBumper.whenActive(new AutoAimTurretHood(m_hood, m_turret, () -> {
+            return Constants.cHood.getHoodPosition(m_visionController.getFilteredDistance());
+        }, m_visionController::getFilteredYaw));
 
         coController.rightTrigger
-                .whenActive(new TrenchShot(m_flywheel, m_kickerWheel, m_indexer));
+                .whenActive(new ParallelCommandGroup(new AutoAimTurretHood(m_hood, m_turret, () -> {
+                    return Constants.cHood
+                            .getHoodPosition(m_visionController.getFilteredDistance());
+                }, m_visionController::getFilteredYaw),
+                        new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, () -> {
+                            return Constants.cFlywheel
+                                    .getFlywheelRPM(m_visionController.getFilteredDistance());
+                        }, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+                                IndexerSignal.GO_SLOW)));
 
         coController.rightTrigger.whenReleased(new RunCommand(() -> {
             m_flywheel.end();
@@ -237,14 +239,22 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        RamseteCommand ramseteCommand = new RamseteCommand(sectorLineTo2Balls,
-                m_drivetrain::getPose, new RamseteController(),
-                new SimpleMotorFeedforward(Constants.cDrivetrain.kS, Constants.cDrivetrain.kV,
-                        Constants.cDrivetrain.kA),
-                Constants.cDrivetrain.kDriveKinematics, m_drivetrain::getWheelSpeeds,
-                new PIDController(14.3, 0, 0), new PIDController(14.3, 0, 0),
-                m_drivetrain::setVolts, m_drivetrain);
+        RamseteCommand ramseteCommand =
+                new RamseteCommand(testTrajectory, m_drivetrain::getPose, new RamseteController(),
+                        new SimpleMotorFeedforward(Constants.cDrivetrain.kS,
+                                Constants.cDrivetrain.kV, Constants.cDrivetrain.kA),
+                        Constants.cDrivetrain.kDriveKinematics, m_drivetrain::getWheelSpeeds,
+                        new PIDController(0, 0, 0),
+                        new PIDController(0, 0, 0),
+                        m_drivetrain::setVolts, m_drivetrain);
         return ramseteCommand.andThen(() -> m_drivetrain.end());
+    }
+
+    public Command getAutonomousCommand2() {
+        RamseteCommand ramseteCommand =
+                new RamseteCommand(testTrajectory, m_drivetrain::getPose, new RamseteController(),
+                        Constants.cDrivetrain.kDriveKinematics, m_drivetrain::setVelocityMpS, m_drivetrain);
+        return ramseteCommand.andThen(() -> m_drivetrain.setOpenLoop(DriveSignal.BRAKE));
     }
 
     public void init() {

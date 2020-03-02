@@ -11,9 +11,9 @@ package team3647.lib;
  * Add your docs here.
  */
 public class IndexerSignal {
-    private final double funnelOutput;
+    private final double PP_VerticalOutput;
     private final double tunnelOutput;
-    private final double rollersOutput;
+    private final double rollers_verticalOutput;
 
     public static IndexerSignal STOP = new IndexerSignal(0, 0, 0);
     public static IndexerSignal GO = new IndexerSignal(1, .7, .4);
@@ -25,21 +25,21 @@ public class IndexerSignal {
     public static IndexerSignal TUNNELDOWN_HOTDOGOUT = new IndexerSignal(-.7, -.7, -.5);
     public static IndexerSignal INDEXERFWD_SLOW = new IndexerSignal(1, .4, .5);
 
-    public IndexerSignal(double funnelOutput, double tunnelOutput, double rollersOutput) {
-        this.funnelOutput = funnelOutput;
+    public IndexerSignal(double PP_VerticalOutput, double tunnelOutput, double rollers_verticalOutput) {
+        this.PP_VerticalOutput = PP_VerticalOutput;
         this.tunnelOutput = tunnelOutput;
-        this.rollersOutput = rollersOutput;
+        this.rollers_verticalOutput = rollers_verticalOutput;
     }
 
-    public double getFunnelOutput() {
-        return this.funnelOutput;
+    public double getPP_VerticalOutput() {
+        return this.PP_VerticalOutput;
     }
 
     public double getTunnelOutput() {
         return this.tunnelOutput;
     }
 
-    public double getRollersOutput() {
-        return this.rollersOutput;
+    public double getRollers_verticalOutput() {
+        return this.rollers_verticalOutput;
     }
 }

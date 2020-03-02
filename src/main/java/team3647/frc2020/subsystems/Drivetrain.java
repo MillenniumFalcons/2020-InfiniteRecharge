@@ -137,8 +137,9 @@ public class Drivetrain implements PeriodicSubsystem {
 
     @Override
     public synchronized void init() {
-        setToCoast();
+        setToBrake();
         resetEncoders();
+        zeroHeading();
         m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
         initialized = true;
     }
@@ -184,7 +185,7 @@ public class Drivetrain implements PeriodicSubsystem {
         }
 
         m_gyro.getYawPitchRoll(periodicIO.ypr);
-        periodicIO.heading = Math.IEEEremainder(periodicIO.ypr[0], 360);
+        periodicIO.heading = -Math.IEEEremainder(periodicIO.ypr[0], 360);
     }
 
     private void reconstructLeftEncoder() {
@@ -291,16 +292,18 @@ public class Drivetrain implements PeriodicSubsystem {
         shifted = value;
     }
 
+    public void setVelocityMpS(double leftMPS, double rightMPS) {
+        setVelocity(new DriveSignal(leftMPS, rightMPS));
+    }
+
     /**
      * @param driveSignal in meters per second
      */
     public synchronized void setVelocity(DriveSignal driveSignal) {
         if (driveSignal != null) {
             if (!isShifted()) {
-                periodicIO.leftFeedForward = feedforward.calculate(driveSignal.getLeft(),
-                        (driveSignal.getLeft() - periodicIO.leftVelocity) / kDt);
-                periodicIO.rightFeedForward = feedforward.calculate(driveSignal.getRight(),
-                        (driveSignal.getRight() - periodicIO.rightVelocity) / kDt);
+                periodicIO.leftFeedForward = feedforward.calculate(driveSignal.getLeft());
+                periodicIO.rightFeedForward = feedforward.calculate(driveSignal.getRight());
 
                 periodicIO.leftOutput = driveSignal.getLeft() / kEncoderVelocityToMetersPerSecond;
                 periodicIO.rightOutput = driveSignal.getRight() / kEncoderVelocityToMetersPerSecond;
@@ -350,6 +353,10 @@ public class Drivetrain implements PeriodicSubsystem {
         setVelocity(new DriveSignal(leftMotorOutput * m_leftPIDConfig.maxVelocity,
                 rightMotorOutput * m_rightPIDConfig.maxVelocity));
 
+    }
+
+    public void setVolts(double leftVolts, double rightVolts) {
+        setOpenLoop(new DriveSignal(leftVolts / 12, rightVolts / 12));
     }
 
     public void arcadeDrive(double xSpeed, double zRotation, boolean scaleInputs) {
@@ -451,9 +458,9 @@ public class Drivetrain implements PeriodicSubsystem {
                 m_timeStamp + " Coudln't set right master to brake mode");
 
         // SparkMaxUtil.checkError(leftSlave.setIdleMode(IdleMode.kBrake),
-        //         m_timeStamp + " Coudln't set left slave to brake mode");
+        // m_timeStamp + " Coudln't set left slave to brake mode");
         // SparkMaxUtil.checkError(rightSlave.setIdleMode(IdleMode.kBrake),
-        //         m_timeStamp + " Coudln't set right slave to brake mode");
+        // m_timeStamp + " Coudln't set right slave to brake mode");
     }
 
     public synchronized void resetEncoders() {
@@ -522,10 +529,6 @@ public class Drivetrain implements PeriodicSubsystem {
         return shifted;
     }
 
-    public void setVolts(double leftVolts, double rightVolts) {
-        leftMaster.setVoltage(leftVolts);
-        rightMaster.setVoltage(rightVolts);
-    }
 
     /**
      * Resets the odometry to the specified pose.
