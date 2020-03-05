@@ -107,6 +107,7 @@ public class VisionController implements PeriodicSubsystem {
             limelight.camMode(periodicIO.camMode);
             limelight.ledMode(periodicIO.ledMode);
             limelight.streamMode(periodicIO.streamMode);
+            limelight.setPipeline(periodicIO.pipeline.id);
             HALMethods.sendDSWarning("limelight changed modes!");
             outputsHaveChanged = false;
         }

@@ -9,40 +9,46 @@ package team3647.frc2020.commands;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.subsystems.Turret;
+import team3647.lib.wpi.Timer;
 
 public class TurretMotionMagic extends CommandBase {
     private final Turret m_turret;
     private final double kAngle;
-  /**
-   * Creates a new TurretGoTo.
-   */
-  public TurretMotionMagic(Turret turret, double angle) {
-    // Use addRequirements() here to declare subsystem dependencies.
-    m_turret = turret;
-    kAngle = angle;
-    addRequirements(m_turret);
-  }
+    private final Timer timer;
 
-  // Called when the command is initially scheduled.
-  @Override
-  public void initialize() {
-  }
+    /**
+     * Creates a new TurretGoTo.
+     */
+    public TurretMotionMagic(Turret turret, double angle) {
+        // Use addRequirements() here to declare subsystem dependencies.
+        m_turret = turret;
+        kAngle = angle;
+        timer = new Timer();
+        addRequirements(m_turret);
+    }
 
-  // Called every time the scheduler runs while the command is scheduled.
-  @Override
-  public void execute() {
-      m_turret.setAngle(kAngle);
-  }
+    // Called when the command is initially scheduled.
+    @Override
+    public void initialize() {
+        timer.reset();
+        timer.start();
+    }
 
-  // Called once the command ends or is interrupted.
-  @Override
-  public void end(boolean interrupted) {
-      m_turret.end();
-  }
+    // Called every time the scheduler runs while the command is scheduled.
+    @Override
+    public void execute() {
+        m_turret.setAngle(kAngle);
+    }
 
-  // Returns true when the command should end.
-  @Override
-  public boolean isFinished() {
-    return m_turret.reachedTargetPosition();
-  }
+    // Called once the command ends or is interrupted.
+    @Override
+    public void end(boolean interrupted) {
+        m_turret.end();
+    }
+
+    // Returns true when the command should end.
+    @Override
+    public boolean isFinished() {
+        return m_turret.reachedTargetPosition() || timer.get() > .5;
+    }
 }

@@ -7,6 +7,7 @@
 
 package team3647.frc2020.commands;
 
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import team3647.frc2020.subsystems.Indexer;
@@ -21,7 +22,7 @@ public class StowIntakeAndOrganizeFeeder extends SequentialCommandGroup {
      * Creates a new StowIntakeAndOrganizeFeeder.
      */
     public StowIntakeAndOrganizeFeeder(Intake intake, Indexer indexer, KickerWheel kickerWheel) {
-        super(new StowOuterPistons(intake).withTimeout(.3), new RunIntakeRoller(intake, .3).withTimeout(.4),
-                new WaitCommand(2), new OrganizeFeeder(indexer, kickerWheel).withTimeout(3));
+        super(new RunCommand(intake::end, intake).withTimeout(.1), new StowOuterPistons(intake).withTimeout(.3), new WaitCommand(2), 
+                new OrganizeFeeder(indexer, kickerWheel).withTimeout(3));
     }
 }

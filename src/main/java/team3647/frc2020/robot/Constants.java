@@ -359,6 +359,10 @@ public class Constants {
                 metersInitiationLineFromDriversStation, metersCenterOfTowerFromSide);
     }
 
+    public static class cClimber {
+        public static int solenoidPin = 7;
+    }
+
     /**
      * In order to make the class not be able to be an object
      */
