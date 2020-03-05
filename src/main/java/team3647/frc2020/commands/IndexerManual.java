@@ -29,7 +29,7 @@ public class IndexerManual extends CommandBase {
     @Override
     public void execute() {
         double output = outputSupplier.getAsDouble();
-        m_indexer.set(new IndexerSignal(Math.signum(output), output, output));
+        m_indexer.set(new IndexerSignal(Math.signum(output), Math.signum(output) * .8, output, output));
     }
 
     // Called once the command ends or is interrupted.

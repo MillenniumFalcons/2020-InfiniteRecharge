@@ -10,6 +10,7 @@ package team3647.lib.drivers;
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import team3647.lib.wpi.HALMethods;
+import team3647.lib.wpi.Timer;
 
 /**
  * Create victor with configs.
@@ -75,6 +76,7 @@ public class VictorSPXFactory {
     }
 
     public static VictorSPX createVictor(Configuration config) {
+        Timer.delay(.25);
         VictorSPX victor = new VictorSPX(config.CANID);
         victor.configFactoryDefault();
         victor.setInverted(config.inverted);

@@ -25,6 +25,13 @@ public class MoveHood extends CommandBase {
         addRequirements(m_hood);
     }
 
+    public MoveHood(Hood hood, double hoodPosition) {
+        m_hood = hood;
+        this.hoodPosition = () -> {
+            return hoodPosition;
+        };
+    }
+
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {

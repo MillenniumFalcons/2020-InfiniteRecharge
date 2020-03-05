@@ -5,11 +5,12 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.wpilibj.DriverStation;
+import team3647.lib.wpi.Timer;
 
 /**
- * Creates CANTalon objects and configures all the parameters we care about to factory defaults.
- * Closed-loop and sensor parameters are not set, as these are expected to be set by the
- * application. (254)
+ * Creates CANTalon objects and configures all the parameters we care about to
+ * factory defaults. Closed-loop and sensor parameters are not set, as these are
+ * expected to be set by the application. (254)
  */
 public class SparkMaxFactory {
 
@@ -30,8 +31,7 @@ public class SparkMaxFactory {
             this.inverted = inverted;
         }
 
-        public Configuration currentLimiting(boolean enabled, int maxFreeSpeedCurrent,
-                int maxStallCurrent) {
+        public Configuration currentLimiting(boolean enabled, int maxFreeSpeedCurrent, int maxStallCurrent) {
             this.maxFreeSpeedCurrent = maxFreeSpeedCurrent;
             this.maxStallCurrent = maxStallCurrent;
             enableCurrentLimiting = enabled;
@@ -51,10 +51,8 @@ public class SparkMaxFactory {
 
         public static Configuration mirrorWithCANID(Configuration config, int CANID) {
             return new Configuration(CANID, config.inverted)
-                    .currentLimiting(config.enableCurrentLimiting, config.maxFreeSpeedCurrent,
-                            config.maxStallCurrent)
-                    .voltageCompensation(config.voltageCompensation, config.nominalVoltage)
-                    .idleMode(config.idleMode);
+                    .currentLimiting(config.enableCurrentLimiting, config.maxFreeSpeedCurrent, config.maxStallCurrent)
+                    .voltageCompensation(config.voltageCompensation, config.nominalVoltage).idleMode(config.idleMode);
         }
     }
 
@@ -62,19 +60,21 @@ public class SparkMaxFactory {
 
     private static void handleCANError(int id, CANError error, String message) {
         if (error != CANError.kOk) {
-            DriverStation.reportError("Could not configure spark id: " + id + " error: "
-                    + error.toString() + " " + message, false);
+            DriverStation.reportError(
+                    "Could not configure spark id: " + id + " error: " + error.toString() + " " + message, false);
         }
     }
 
     public static CANSparkMax createSparkMax(Configuration config) {
+        Timer.delay(.25);
         CANSparkMax sparkmax = new CANSparkMax(config.CANID, MotorType.kBrushless);
         handleCANError(config.CANID, sparkmax.restoreFactoryDefaults(), "restore factory defaults");
         handleCANError(config.CANID, sparkmax.clearFaults(), "clear faults");
 
         if (config.enableCurrentLimiting) {
-            handleCANError(config.CANID, sparkmax.setSmartCurrentLimit(config.maxStallCurrent,
-                    config.maxFreeSpeedCurrent), "set current limiting");
+            handleCANError(config.CANID,
+                    sparkmax.setSmartCurrentLimit(config.maxStallCurrent, config.maxFreeSpeedCurrent),
+                    "set current limiting");
         }
 
         sparkmax.setInverted(config.inverted);
@@ -84,25 +84,23 @@ public class SparkMaxFactory {
             handleCANError(config.CANID, sparkmax.enableVoltageCompensation(config.nominalVoltage),
                     "set voltage compensation");
         } else {
-            handleCANError(config.CANID, sparkmax.disableVoltageCompensation(),
-                    "disable voltage compensation");
+            handleCANError(config.CANID, sparkmax.disableVoltageCompensation(), "disable voltage compensation");
         }
         return sparkmax;
     }
 
     public static CANSparkMax createSparkMaxFollower(CANSparkMax master, Configuration config,
             boolean isInvertedFromMaster) {
+        Timer.delay(.25);
         CANSparkMax follower = new CANSparkMax(config.CANID, MotorType.kBrushless);
         handleCANError(config.CANID, follower.restoreFactoryDefaults(), "restore factory defaults");
         handleCANError(config.CANID, follower.clearFaults(), "clear faults");
         if (config.voltageCompensation) {
             if (config.voltageCompensation) {
-                handleCANError(config.CANID,
-                        follower.enableVoltageCompensation(config.nominalVoltage),
+                handleCANError(config.CANID, follower.enableVoltageCompensation(config.nominalVoltage),
                         "set voltage compensation");
             } else {
-                handleCANError(config.CANID, follower.disableVoltageCompensation(),
-                        "disable voltage compensation");
+                handleCANError(config.CANID, follower.disableVoltageCompensation(), "disable voltage compensation");
             }
         }
         handleCANError(config.CANID, follower.follow(master, isInvertedFromMaster), "set follow");

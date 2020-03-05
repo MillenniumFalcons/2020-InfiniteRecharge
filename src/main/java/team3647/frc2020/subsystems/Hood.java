@@ -29,7 +29,7 @@ public class Hood implements PeriodicSubsystem {
         linearActuator = new Servo(linearActuatorPWM);
         this.minPosition = minPosition;
         this.maxPosition = maxPosition;
-        periodicIO.demand = .5;
+        periodicIO.demand = 0;
     }
 
     @Override

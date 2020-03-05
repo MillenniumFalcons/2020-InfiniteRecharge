@@ -7,8 +7,8 @@
 
 package team3647.frc2020.commands;
 
-
 import edu.wpi.first.wpilibj2.command.CommandBase;
+import team3647.frc2020.subsystems.BallStopper;
 import team3647.frc2020.subsystems.Flywheel;
 import team3647.frc2020.subsystems.Indexer;
 import team3647.frc2020.subsystems.KickerWheel;
@@ -18,6 +18,7 @@ public abstract class ShootOpenloop extends CommandBase {
     private final Flywheel m_flywheel;
     private final KickerWheel m_kickerWheel;
     private final Indexer m_indexer;
+    private final BallStopper m_ballStopper;
     private boolean reachedVelOnce;
     private double motorOutputAtRPM = 1;
 
@@ -30,13 +31,13 @@ public abstract class ShootOpenloop extends CommandBase {
     /**
      * Shoot balls continuously while execute is ran
      */
-    public ShootOpenloop(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer,
-            double shooterRPM, double kickerWheelOutput, double percentIncrease,
-            IndexerSignal indexerSignal) {
+    public ShootOpenloop(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer, BallStopper ballStopper,
+            double shooterRPM, double kickerWheelOutput, double percentIncrease, IndexerSignal indexerSignal) {
         m_flywheel = flywheel;
         m_kickerWheel = kickerWheel;
         m_indexer = indexer;
-        addRequirements(m_flywheel, m_kickerWheel, m_indexer);
+        m_ballStopper = ballStopper;
+        addRequirements(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper);
 
         this.shooterRPM = shooterRPM;
         this.kickerWheelOutput = kickerWheelOutput;
@@ -54,12 +55,12 @@ public abstract class ShootOpenloop extends CommandBase {
     @Override
     public void execute() {
 
-
         // AUTO SHOT
         m_kickerWheel.setOpenloop(kickerWheelOutput);
 
         if (m_flywheel.getVelocity() > shooterRPM) {
             motorOutputAtRPM = m_flywheel.getOutput();
+
             reachedVelOnce = true;
 
         } else if (!reachedVelOnce) {
@@ -67,6 +68,7 @@ public abstract class ShootOpenloop extends CommandBase {
         }
 
         if (reachedVelOnce) {
+            m_ballStopper.retract();
             m_indexer.set(indexerSignal);
             m_flywheel.setOpenloop(motorOutputAtRPM * percentIncrease);
         }

@@ -1,0 +1,58 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) 2018-2019 FIRST. All Rights Reserved.                        */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
+package team3647.frc2020.autonomous;
+
+import java.util.List;
+
+import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
+import edu.wpi.first.wpilibj.geometry.Pose2d;
+import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
+import edu.wpi.first.wpilibj.trajectory.Trajectory;
+import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
+import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
+import edu.wpi.first.wpilibj.trajectory.constraint.DifferentialDriveVoltageConstraint;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.RamseteCommand;
+import team3647.frc2020.robot.Constants;
+import static team3647.frc2020.robot.Constants.cField;
+
+/**
+ * Add your docs here.
+ */
+public class Trajectories {
+
+    private static final DifferentialDriveVoltageConstraint autoVoltageConstraint = new DifferentialDriveVoltageConstraint(
+            new SimpleMotorFeedforward(Constants.cDrivetrain.kS, Constants.cDrivetrain.kV, Constants.cDrivetrain.kA),
+            Constants.cDrivetrain.kDriveKinematics, Constants.cDrivetrain.maxVoltage);
+
+    // Create config for trajectory
+    private static final TrajectoryConfig forwardTrajectoryConfig = new TrajectoryConfig(
+            Constants.cDrivetrain.kMaxSpeedMetersPerSecond,
+            Constants.cDrivetrain.kMaxAccelerationMetersPerSecondSquared)
+                    // Add kinematics to ensure max speed is actually obeyed
+                    .setKinematics(Constants.cDrivetrain.kDriveKinematics)
+                    // Apply the voltage constraint
+                    .addConstraint(autoVoltageConstraint).setReversed(false);
+
+    private static final TrajectoryConfig reverseTrajectoryConfig = new TrajectoryConfig(
+            Constants.cDrivetrain.kMaxSpeedMetersPerSecond,
+            Constants.cDrivetrain.kMaxAccelerationMetersPerSecondSquared)
+                    // Add kinematics to ensure max speed is actually obeyed
+                    .setKinematics(Constants.cDrivetrain.kDriveKinematics)
+                    // Apply the voltage constraint
+                    .addConstraint(autoVoltageConstraint).setReversed(true);
+
+    public static Trajectory initiationLineToTrenchBalls = TrajectoryGenerator.generateTrajectory(
+            cField.startingPositionForTrenchRun, List.of(cField.trenchBall1, cField.trenchBall2),
+            new Pose2d(cField.trenchBall3, cField.startingPositionForTrenchRun.getRotation()), reverseTrajectoryConfig);
+
+    public static Trajectory trenchBall3ToFrontOfTower = TrajectoryGenerator.generateTrajectory(
+            new Pose2d(cField.trenchBall3, new Rotation2d(0)), List.of(),
+            new Pose2d(cField.initiationFrontOfTower, new Rotation2d(0)), forwardTrajectoryConfig);
+}

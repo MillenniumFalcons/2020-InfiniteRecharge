@@ -26,8 +26,8 @@ public class ArcadeDrive extends CommandBase {
     /**
      * Creates a new ArcadeDrive.
      */
-    public ArcadeDrive(Drivetrain drivetrain, DoubleSupplier throttle, DoubleSupplier turn,
-            BooleanSupplier scaleInputs, BooleanSupplier shouldShift) {
+    public ArcadeDrive(Drivetrain drivetrain, DoubleSupplier throttle, DoubleSupplier turn, BooleanSupplier scaleInputs,
+            BooleanSupplier shouldShift) {
         // Use addRequirements() here to declare subsystem dependencies.
         m_drivetrain = drivetrain;
         this.shouldShift = shouldShift;
@@ -67,9 +67,8 @@ public class ArcadeDrive extends CommandBase {
     public void execute() {
         // m_drivetrain.arcadeDrive(m_throttle.getAsDouble(), m_turn.getAsDouble(),
         // m_scaleInputs.getAsBoolean());
-        m_drivetrain.setVelocity(
-                DriveSignal.fromControls(m_throttle.getAsDouble(), -m_turn.getAsDouble()));
-        // m_drivetrain.setOpenLoop(new DriveSignal(m_throttle.getAsDouble(), 0));
+        m_drivetrain.setVelocity(DriveSignal.fromControls(m_throttle.getAsDouble(), -m_turn.getAsDouble()));
+
         if (shouldShift.getAsBoolean() != m_drivetrain.isShifted()) {
             m_drivetrain.setShifter(shouldShift.getAsBoolean());
         }

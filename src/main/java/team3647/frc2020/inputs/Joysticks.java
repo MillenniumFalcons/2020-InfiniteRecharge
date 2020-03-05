@@ -51,8 +51,8 @@ public class Joysticks {
         rightTrigger =
                 new JoystickTrigger(controller, XboxController.Axis.kRightTrigger.value, .15);
 
-        rightJoyStickPress = new JoystickButton(controller, XboxController.Hand.kRight.value);
-        leftJoyStickPress = new JoystickButton(controller, XboxController.Hand.kLeft.value);
+        rightJoyStickPress = new JoystickButton(controller, 10);
+        leftJoyStickPress = new JoystickButton(controller, 9);
         leftMidButton = new JoystickButton(controller, XboxController.Button.kBack.value);
         rightMidButton = new JoystickButton(controller, XboxController.Button.kStart.value);
 

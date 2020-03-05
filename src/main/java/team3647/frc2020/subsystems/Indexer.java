@@ -10,9 +10,11 @@ package team3647.frc2020.subsystems;
 import java.util.function.Function;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import edu.wpi.first.wpilibj.DigitalInput;
 import team3647.lib.IndexerSignal;
+import team3647.lib.drivers.TalonSRXFactory;
 import team3647.lib.drivers.VictorSPXFactory;
 import team3647.lib.wpi.HALMethods;
 
@@ -21,11 +23,12 @@ import team3647.lib.wpi.HALMethods;
  */
 public class Indexer implements PeriodicSubsystem {
 
-    private final VictorSPX PP_Vertical;
+    private final VictorSPX leftVertical;
     private final VictorSPX tunnel;
-    private final VictorSPX rollers_vertical;
+    private final VictorSPX horizontalRollers;
+    private final TalonSRX rightVertical;
 
-    private final int funnelPDPSlot;
+    private final int leftVerticalPDPSlot;
     private final int tunnelPDPSlot;
     private final int rollersPDPSlot;
 
@@ -34,10 +37,11 @@ public class Indexer implements PeriodicSubsystem {
 
     private final Function<Integer, Double> getCurrent;
 
-    public Indexer(VictorSPXFactory.Configuration funnelConfig, VictorSPXFactory.Configuration tunnelConfig,
+    public Indexer(VictorSPXFactory.Configuration leftVerticalRollersConfig,
+            TalonSRXFactory.Configuration rightVerticalRollersConfig, VictorSPXFactory.Configuration tunnelConfig,
             VictorSPXFactory.Configuration rollersConfig, int bannerSensorPin, Function<Integer, Double> getCurrent) {
         boolean error = false;
-        if (funnelConfig == null) {
+        if (leftVerticalRollersConfig == null) {
             HALMethods.sendDSError("funnel config was null");
             error = true;
         }
@@ -57,13 +61,14 @@ public class Indexer implements PeriodicSubsystem {
         if (error) {
             throw new NullPointerException("1 or more of the arguments to Indexer constructor were null");
         } else {
-            PP_Vertical = VictorSPXFactory.createVictor(funnelConfig);
+            leftVertical = VictorSPXFactory.createVictor(leftVerticalRollersConfig);
             tunnel = VictorSPXFactory.createVictor(tunnelConfig);
-            rollers_vertical = VictorSPXFactory.createVictor(rollersConfig);
+            horizontalRollers = VictorSPXFactory.createVictor(rollersConfig);
+            rightVertical = TalonSRXFactory.createTalon(rightVerticalRollersConfig);
             this.getCurrent = getCurrent;
         }
 
-        funnelPDPSlot = funnelConfig.pdpSlot;
+        leftVerticalPDPSlot = leftVerticalRollersConfig.pdpSlot;
         tunnelPDPSlot = tunnelConfig.pdpSlot;
         rollersPDPSlot = rollersConfig.pdpSlot;
 
@@ -87,8 +92,8 @@ public class Indexer implements PeriodicSubsystem {
     /**
      * @return the funnelPDPSlot
      */
-    public int getFunnelPDPSlot() {
-        return funnelPDPSlot;
+    public int getLeftVerticalPDPSlot() {
+        return leftVerticalPDPSlot;
     }
 
     public void set(IndexerSignal signal) {
@@ -96,17 +101,24 @@ public class Indexer implements PeriodicSubsystem {
             HALMethods.sendDSError("Indexer signal was null!");
             return;
         }
-        if (getCurrent.apply(funnelPDPSlot) > 30) {
-            PP_Vertical.set(ControlMode.PercentOutput, signal.getPP_VerticalOutput() * .5);
+        if (getCurrent.apply(leftVerticalPDPSlot) > 30) {
+            leftVertical.set(ControlMode.PercentOutput, signal.getLeftVerticalOutput() * .5);
         } else {
-            PP_Vertical.set(ControlMode.PercentOutput, signal.getPP_VerticalOutput());
+            leftVertical.set(ControlMode.PercentOutput, signal.getLeftVerticalOutput());
         }
+
+        if (Math.abs(rightVertical.getSupplyCurrent()) > 30) {
+            rightVertical.set(ControlMode.PercentOutput, signal.getRightVerticalOutput() * .5);
+        } else {
+            rightVertical.set(ControlMode.PercentOutput, signal.getRightVerticalOutput());
+        }
+
         if (getCurrent.apply(tunnelPDPSlot) > 30) {
             tunnel.set(ControlMode.PercentOutput, signal.getTunnelOutput() * .5);
         } else {
             tunnel.set(ControlMode.PercentOutput, signal.getTunnelOutput());
         }
-        rollers_vertical.set(ControlMode.PercentOutput, signal.getRollers_verticalOutput());
+        horizontalRollers.set(ControlMode.PercentOutput, signal.getHorizontalRollersOutput());
     }
 
     @Override

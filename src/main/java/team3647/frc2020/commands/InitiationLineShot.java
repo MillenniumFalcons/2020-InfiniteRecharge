@@ -7,6 +7,7 @@
 
 package team3647.frc2020.commands;
 
+import team3647.frc2020.subsystems.BallStopper;
 import team3647.frc2020.subsystems.Flywheel;
 import team3647.frc2020.subsystems.Indexer;
 import team3647.frc2020.subsystems.KickerWheel;
@@ -17,8 +18,8 @@ public class InitiationLineShot extends ShootOpenloop {
     /**
      * Creates a new InitiationLineShot.
      */
-    public InitiationLineShot(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer) {
-        super(flywheel, kickerWheel, indexer, 3650, .5, 1.03, IndexerSignal.GO_FAST);
+    public InitiationLineShot(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer, BallStopper ballStopper) {
+        super(flywheel, kickerWheel, indexer, ballStopper, 3650, .5, 1.03, IndexerSignal.GO_FAST);
         // Use addRequirements() here to declare subsystem dependencies.
     }
 }

@@ -10,6 +10,7 @@ package team3647.frc2020.commands;
 import java.util.function.DoubleSupplier;
 import java.util.function.Function;
 import edu.wpi.first.wpilibj2.command.CommandBase;
+import team3647.frc2020.subsystems.BallStopper;
 import team3647.frc2020.subsystems.Flywheel;
 import team3647.frc2020.subsystems.Indexer;
 import team3647.frc2020.subsystems.KickerWheel;
@@ -19,6 +20,7 @@ public class ShootClosedLoop extends CommandBase {
     private final Flywheel m_flywheel;
     private final KickerWheel m_kickerWheel;
     private final Indexer m_indexer;
+    private final BallStopper m_ballStopper;
     private final DoubleSupplier shooterRPM;
     private final Function<Double, Double> kickerWheelOutput;
     private final IndexerSignal signalOnShoot;
@@ -26,13 +28,13 @@ public class ShootClosedLoop extends CommandBase {
     /**
      * Creates a new ShootClosedLoop.
      */
-    public ShootClosedLoop(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer,
-            DoubleSupplier shooterRPM, Function<Double, Double> kickerWheelOutput,
-            IndexerSignal signalOnShoot) {
+    public ShootClosedLoop(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer, BallStopper ballStopper,
+            DoubleSupplier shooterRPM, Function<Double, Double> kickerWheelOutput, IndexerSignal signalOnShoot) {
         // Use addRequirements() here to declare subsystem dependencies.
         m_flywheel = flywheel;
         m_kickerWheel = kickerWheel;
         m_indexer = indexer;
+        m_ballStopper = ballStopper;
 
         this.kickerWheelOutput = kickerWheelOutput;
         this.shooterRPM = shooterRPM;
@@ -43,13 +45,15 @@ public class ShootClosedLoop extends CommandBase {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
+        m_ballStopper.retract();
     }
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_kickerWheel.setOpenloop(kickerWheelOutput.apply(m_flywheel.getVelocity()));
-
+        m_kickerWheel.setOpenloop(kickerWheelOutput.apply(shooterRPM.getAsDouble()));
+        System.out.println("kicker wheel output: " + kickerWheelOutput.apply(shooterRPM.getAsDouble()));
+        m_ballStopper.retract();
         m_flywheel.setRPM(shooterRPM.getAsDouble());
 
         if (m_flywheel.reachedTargetVelocity()) {
