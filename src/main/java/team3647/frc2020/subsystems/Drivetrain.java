@@ -42,11 +42,11 @@ public class Drivetrain implements PeriodicSubsystem {
     private double m_quickStopAlpha = kDefaultQuickStopAlpha;
     private double m_quickStopAccumulator;
 
-    private Configuration m_leftMasterConfig;
-    private Configuration m_rightMasterConfig;
+    private final Configuration m_leftMasterConfig;
+    private final Configuration m_rightMasterConfig;
 
-    private ClosedLoopConfig m_leftPIDConfig;
-    private ClosedLoopConfig m_rightPIDConfig;
+    private final ClosedLoopConfig m_leftPIDConfig;
+    private final ClosedLoopConfig m_rightPIDConfig;
     private CANEncoder leftEncoder;
     private CANEncoder rightEncoder;
 
@@ -56,8 +56,7 @@ public class Drivetrain implements PeriodicSubsystem {
     private boolean initialized = false;
     private PeriodicIO periodicIO = new PeriodicIO();
 
-    private SimpleMotorFeedforward feedforward;
-    private DifferentialDrive drive;
+    private final SimpleMotorFeedforward feedforward;
 
     private final double kEncoderVelocityToMetersPerSecond;
 
@@ -69,7 +68,7 @@ public class Drivetrain implements PeriodicSubsystem {
 
     private final PigeonIMU m_gyro;
 
-    private Solenoid shifter;
+    private final Solenoid shifter;
 
     private boolean shifted;
 
@@ -108,9 +107,6 @@ public class Drivetrain implements PeriodicSubsystem {
         feedforward = new SimpleMotorFeedforward(kS, kV, kA);
         m_gyro = new PigeonIMU(gyroCANID);
         shifter = new Solenoid(shifterPin);
-        drive = new DifferentialDrive(leftMaster, rightMaster);
-        drive.setRightSideInverted(false);
-        drive.setSafetyEnabled(false);
         constructCount++;
         shifted = false;
     }

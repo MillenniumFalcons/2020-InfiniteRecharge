@@ -8,6 +8,7 @@
 package team3647.frc2020.subsystems;
 
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpiutil.math.MathUtil;
 import team3647.lib.drivers.TalonSRXFactory;
 import team3647.lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 
@@ -17,7 +18,7 @@ import team3647.lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 public class Turret extends TalonSRXSubsystem {
     private final double kMaxRotationDeg;
     private final double kMinRotationDeg;
-    private DigitalInput limitSwitch;
+    private final DigitalInput limitSwitch;
     private boolean isOnLimitSwitch = false;
     private boolean isAiming = false;
 
@@ -51,49 +52,46 @@ public class Turret extends TalonSRXSubsystem {
      * @param angle any angle
      * @return if the angle is between the limits after normalized
      */
-    private boolean isAngleGood(double angle) {
+    public boolean isAngleGood(double angle) {
         angle = ((angle % 360) + 360) % 360;
-
-        if (angle > 180) {
-            angle -= 360;
-        }
 
         return angle > kMinRotationDeg && angle < kMaxRotationDeg;
     }
 
     public void setAngle(double angle) {
-        if (isAngleGood(angle)) {
-            setPosition(angle);
-            updatePositionFeedforward();
-        } else if (isAngleTooBig(angle)) {
-            setPosition(kMaxRotationDeg);
-            updatePositionFeedforward();
-        } else if (isAngleTooSmall(angle)) {
-            setPosition(kMinRotationDeg);
-            updatePositionFeedforward();
-        } else {
-            end();
-        }
-
+        // if (isAngleGood(angle)) {
+        //     setPosition(angle);
+        //     updatePositionFeedforward();
+        // } else if (isAngleTooBig(angle)) {
+        //     setPosition(kMaxRotationDeg);
+        //     updatePositionFeedforward();
+        // } else if (isAngleTooSmall(angle)) {
+        //     setPosition(kMinRotationDeg);
+        //     updatePositionFeedforward();
+        // } else {
+        //     end();
+        // }
+        setPosition(MathUtil.clamp(angle, kMinRotationDeg, kMaxRotationDeg));
+        updatePositionFeedforward();
     }
 
-    public boolean isAngleTooBig(double angle) {
-        angle = ((angle % 360) + 360) % 360;
+    // public boolean isAngleTooBig(double angle) {
+    //     angle = ((angle % 360) + 360) % 360;
 
-        if (angle > 180) {
-            angle -= 360;
-        }
-        return angle >= kMaxRotationDeg;
-    }
+    //     if (angle > 180) {
+    //         angle -= 360;
+    //     }
+    //     return angle >= kMaxRotationDeg;
+    // }
 
-    public boolean isAngleTooSmall(double angle) {
-        angle = ((angle % 360) + 360) % 360;
+    // public boolean isAngleTooSmall(double angle) {
+    //     angle = ((angle % 360) + 360) % 360;
 
-        if (angle > 180) {
-            angle -= 360;
-        }
-        return angle <= kMinRotationDeg;
-    }
+    //     if (angle > 180) {
+    //         angle -= 360;
+    //     }
+    //     return angle <= kMinRotationDeg;
+    // }
 
     public void setAngleMotionMagic(double angle) {
         if (isAngleGood(angle)) {

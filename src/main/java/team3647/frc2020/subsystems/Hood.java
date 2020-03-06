@@ -19,7 +19,7 @@ public class Hood implements PeriodicSubsystem {
         public double demand;
     }
 
-    private Servo linearActuator;
+    private final Servo linearActuator;
     private final double minPosition;
     private final double maxPosition;
     private PeriodicIO periodicIO = new PeriodicIO();

@@ -143,8 +143,7 @@ public class RobotContainer {
             double targetAngleInForTurretPosition =
                     m_turret.getAngle() - m_visionController.getFilteredYaw();
             boolean isTargetOutsideLimits =
-                    hasValidTarget && (m_turret.isAngleTooBig(targetAngleInForTurretPosition)
-                            || m_turret.isAngleTooBig(targetAngleInForTurretPosition));
+                    hasValidTarget && !m_turret.isAngleGood(targetAngleInForTurretPosition);
             boolean isTurretAiming = m_turret.isAiming();
 
             if (isTurretAiming) {
@@ -187,8 +186,6 @@ public class RobotContainer {
         m_printer.addDouble("hoodPosition", m_hood::getAppliedPosition);
         m_printer.addDouble("turret distance to target", m_visionController::getFilteredDistance);
         m_printer.addDouble("shooter velocity", m_flywheel::getVelocity);
-        m_printer.addDouble("drivetrain left velocity", m_drivetrain::getLeftVelocity);
-        m_printer.addDouble("heading", m_drivetrain::getHeading);
 
         configButtonBindings();
     }
@@ -258,6 +255,8 @@ public class RobotContainer {
                 new MoveHood(m_hood, Constants.cHood.rightUpToTowerShotPosition),
                 new BatterShot(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper)));
 
+        coController.buttonY.or(coController.buttonB).or(coController.rightTrigger).whenActive(new RunCommand(airCompressor::stop).withTimeout(.1));
+        coController.buttonY.or(coController.buttonB).or(coController.rightTrigger).whenInactive(new RunCommand(airCompressor::start).withTimeout(.1));
         // coController.rightTrigger.whenActive(
         // new TrenchShot(m_flywheel, m_kickerWheel, m_indexer)
         // );

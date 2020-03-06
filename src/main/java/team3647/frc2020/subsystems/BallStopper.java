@@ -13,7 +13,7 @@ import team3647.lib.wpi.Solenoid;
  * Add your docs here.
  */
 public class BallStopper implements PeriodicSubsystem {
-    private Solenoid stopPistons;
+    private final Solenoid stopPistons;
 
     public BallStopper(int solenoidPin) {
         stopPistons = new Solenoid(solenoidPin);
