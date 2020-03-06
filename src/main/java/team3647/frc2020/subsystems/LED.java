@@ -47,6 +47,18 @@ public class LED implements PeriodicSubsystem {
         setBlue(blueOutput);
     }
 
+    public double getGreen() {
+        return periodicIO.greenDemand;
+    }
+
+    public double getRed() {
+        return periodicIO.redDemand;
+    }
+
+    public double getBlue() {
+        return periodicIO.blueDemand;
+    }
+
     @Override
     public void writePeriodicOutputs() {
         m_CANifier.setLEDOutput(periodicIO.redDemand, LEDChannel.LEDChannelB);

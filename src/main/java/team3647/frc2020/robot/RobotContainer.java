@@ -28,6 +28,7 @@ import team3647.frc2020.commands.AimTurret;
 import team3647.frc2020.commands.ArcadeDrive;
 import team3647.frc2020.commands.AutoAimTurretHood;
 import team3647.frc2020.commands.BatterShot;
+import team3647.frc2020.commands.DeployClimber;
 import team3647.frc2020.commands.ExtendIntakeToGround;
 import team3647.frc2020.commands.GroundIntake;
 import team3647.frc2020.commands.GroundIntakeSequence;
@@ -121,7 +122,6 @@ public class RobotContainer {
     private final CommandScheduler m_commandScheduler = CommandScheduler.getInstance();
 
     public RobotContainer() {
-        // setTestingIndexer();
         airCompressor.start();
         pdp.clearStickyFaults();
         m_intake.extendInner();
@@ -138,14 +138,41 @@ public class RobotContainer {
         m_indexer.setDefaultCommand(new IndexerManual(m_indexer, coController::getRightStickY));
 
         m_LED.setDefaultCommand(new RunCommand(() -> {
-            m_LED.set(SmartDashboard.getNumber("led - red", .5),
-                    SmartDashboard.getNumber("led - green", .5),
-                    SmartDashboard.getNumber("led - blue", .5));
+            boolean hasValidTarget = m_visionController.isValid();
+            boolean isAimed = hasValidTarget && Math.abs(m_visionController.getFilteredYaw()) < 1;
+            double targetAngleInForTurretPosition =
+                    m_turret.getAngle() - m_visionController.getFilteredYaw();
+            boolean isTargetOutsideLimits =
+                    hasValidTarget && (m_turret.isAngleTooBig(targetAngleInForTurretPosition)
+                            || m_turret.isAngleTooBig(targetAngleInForTurretPosition));
+            boolean isTurretAiming = m_turret.isAiming();
+
+            if (isTurretAiming) {
+                if(isTargetOutsideLimits) {
+                    if(m_LED.getRed() > .8) {
+                        m_LED.set(0, 0, 0);
+                    } else {
+                        m_LED.set(1, 0, 0);
+                    }
+                }
+                else if (hasValidTarget) {
+                    if (isAimed) {
+                        if(m_LED.getGreen() > .8) {
+                            m_LED.set(0, 0, 0);
+                        } else {
+                            m_LED.set(0, 1, 0);
+                        }
+                    } else {
+                        m_LED.set(0, 1, 0);
+                    }
+                } else {
+                    m_LED.set(1, 1, 0);
+                }
+            } else {
+                m_LED.set(1, 0, 0);
+            }
         }, m_LED));
 
-        SmartDashboard.putNumber("led - red", 1);
-        SmartDashboard.putNumber("led - green", 0);
-        SmartDashboard.putNumber("led - blue", 0);
 
         m_printer.addDouble("tunnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
@@ -153,6 +180,8 @@ public class RobotContainer {
         m_printer.addDouble("funnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
+
+
         m_printer.addDouble("shooter rpm based on distance", this::getFlywheelRPM);
         m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrent);
         m_printer.addDouble("hoodPosition", m_hood::getAppliedPosition);
@@ -165,29 +194,31 @@ public class RobotContainer {
     }
 
     private void configButtonBindings() {
-        coController.leftTrigger
-                .whenActive(new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper));
+        // coController.leftTrigger
+        // .whenActive(new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper));
 
-        // coController.leftTrigger.whenPressed(
-        // new SequentialCommandGroup(new RunCommand(m_intake::retractInner,
-        // m_intake).withTimeout(.5),
-        // new ExtendIntakeToGround(m_intake).withTimeout(.25)));
+        // coController.leftBumper.whenActive(new ParallelCommandGroup(
+        // new LoadingStationIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
+
+        coController.leftTrigger.whenPressed(new SequentialCommandGroup(
+                new RunCommand(m_intake::retractInner, m_intake).withTimeout(.5),
+                new ExtendIntakeToGround(m_intake).withTimeout(.25)));
+
 
         coController.leftTrigger.whenReleased(
                 new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel).withTimeout(3));
 
-        // coController.leftBumper.and(coController.leftTrigger.negate()).whenActive(
-        // new ParallelCommandGroup(new LoadingStationIntake(m_intake), new
-        // LoadBalls(m_indexer, m_ballStopper)));
+        coController.leftBumper.and(coController.leftTrigger.negate())
+                .whenActive(new ParallelCommandGroup(new LoadingStationIntake(m_intake),
+                        new LoadBalls(m_indexer, m_ballStopper)));
 
-        // coController.leftBumper.and(coController.leftTrigger).whenActive(
-        // new ParallelCommandGroup(new GroundIntake(m_intake), new LoadBalls(m_indexer,
-        // m_ballStopper)));
+        coController.leftBumper.and(coController.leftTrigger).whenActive(new ParallelCommandGroup(
+                new GroundIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
 
-        coController.leftBumper.whenActive(new ParallelCommandGroup(
-                new LoadingStationIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
+
         coController.leftBumper
-                .whenReleased(new OrganizeFeeder(m_indexer, m_kickerWheel).withTimeout(3));
+                .whenReleased(new ParallelCommandGroup(new RunCommand(m_intake::end, m_intake),
+                        new OrganizeFeeder(m_indexer, m_kickerWheel).withTimeout(3)));
 
         coController.buttonA.whenActive(new RemoveBalls(m_indexer, m_intake, m_kickerWheel));
         coController.buttonA.whenReleased(new RunCommand(() -> {
@@ -198,13 +229,13 @@ public class RobotContainer {
             m_intake.extendInner();
         }, m_indexer, m_intake, m_kickerWheel).withTimeout(.5));
 
-        mainController.buttonX.whenPressed(new InstantCommand(m_climber::release));
+        mainController.buttonX.whenPressed(new DeployClimber(m_climber));
 
         coController.rightBumper.whenActive(new AutoAimTurretHood(m_hood, m_turret,
                 this::getHoodPosition, m_visionController::getFilteredYaw));
 
-        coController.rightBumper
-                .whenActive(new AimTurret(m_turret, m_visionController::getFilteredYaw));
+        // coController.rightBumper
+        // .whenActive(new AimTurret(m_turret, m_visionController::getFilteredYaw));
 
         coController.rightTrigger.whenActive(new ParallelCommandGroup(
                 new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
@@ -216,10 +247,11 @@ public class RobotContainer {
 
         coController.leftJoyStickPress
                 .whenActive(new TurretManual(m_turret, coController::getLeftStickX));
-        coController.rightJoyStickPress.whenPressed(new StowIntakeCompletely(m_intake));
+        coController.rightJoyStickPress
+                .whenPressed(new StowIntakeCompletely(m_intake).withTimeout(.1));
 
         coController.buttonB.whenActive(
-                new ParallelCommandGroup(new MoveHood(m_hood, Constants.cHood.cpShotPosition),
+                new ParallelCommandGroup(new MoveHood(m_hood, Constants.cHood.trenchShotPosition),
                         new TrenchShot(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper)));
 
         coController.buttonY.whenActive(new ParallelCommandGroup(
@@ -262,6 +294,10 @@ public class RobotContainer {
         m_visionController.init();
         m_visionController.setLedMode(LEDMode.ON);
         m_visionController.setPipeline(Pipeline.CLOSE);
+    }
+
+    public void onDisabled() {
+        m_visionController.setLedMode(LEDMode.OFF);
     }
 
     public Command getAutonomousCommand() {

@@ -23,6 +23,10 @@ public class Climber implements PeriodicSubsystem {
         climberRelease.set(true);
     }
 
+    public void lock() {
+        climberRelease.set(false);
+    }
+
     @Override
     public String getName() {
         return "Climber";

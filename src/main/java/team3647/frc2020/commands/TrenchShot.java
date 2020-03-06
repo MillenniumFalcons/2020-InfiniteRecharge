@@ -20,7 +20,7 @@ public class TrenchShot extends ShootClosedLoop {
      */
     public TrenchShot(Flywheel flywheel, KickerWheel kickerWheel, Indexer indexer, BallStopper ballStopper) {
         super(flywheel, kickerWheel, indexer, ballStopper, () -> {
-            return 7300;
+            return 5700;
         }, Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM, IndexerSignal.GO);
         // Use addRequirements() here to declare subsystem dependencies.
     }

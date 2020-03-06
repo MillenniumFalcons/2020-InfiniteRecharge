@@ -19,9 +19,10 @@ public class Turret extends TalonSRXSubsystem {
     private final double kMinRotationDeg;
     private DigitalInput limitSwitch;
     private boolean isOnLimitSwitch = false;
+    private boolean isAiming = false;
 
-    public Turret(TalonSRXFactory.Configuration masterConfig, ClosedLoopConfig pidConfig, double maxRotationDeg,
-            double minRotationDeg, int limitSwitchPin) {
+    public Turret(TalonSRXFactory.Configuration masterConfig, ClosedLoopConfig pidConfig,
+            double maxRotationDeg, double minRotationDeg, int limitSwitchPin) {
         super(masterConfig, pidConfig);
         enablePositionFiltering();
         kMaxRotationDeg = maxRotationDeg;
@@ -76,7 +77,7 @@ public class Turret extends TalonSRXSubsystem {
 
     }
 
-    private boolean isAngleTooBig(double angle) {
+    public boolean isAngleTooBig(double angle) {
         angle = ((angle % 360) + 360) % 360;
 
         if (angle > 180) {
@@ -85,7 +86,7 @@ public class Turret extends TalonSRXSubsystem {
         return angle >= kMaxRotationDeg;
     }
 
-    private boolean isAngleTooSmall(double angle) {
+    public boolean isAngleTooSmall(double angle) {
         angle = ((angle % 360) + 360) % 360;
 
         if (angle > 180) {
@@ -113,5 +114,13 @@ public class Turret extends TalonSRXSubsystem {
     @Override
     public String getName() {
         return "Turret";
+    }
+
+    public boolean isAiming() {
+        return isAiming;
+    }
+
+    public void setAiming(boolean value) {
+        isAiming = value;
     }
 }

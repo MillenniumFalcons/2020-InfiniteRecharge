@@ -7,13 +7,14 @@
 
 package team3647.frc2020.commands;
 
+import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import team3647.frc2020.subsystems.Intake;
 
 // NOTE:  Consider using this command inline, rather than writing a subclass.  For more
 // information, see:
 // https://docs.wpilib.org/en/latest/docs/software/commandbased/convenience-features.html
-public class StowIntakeCompletely extends InstantCommand {
+public class StowIntakeCompletely extends CommandBase {
     private final Intake m_intake;
 
     public StowIntakeCompletely(Intake intake) {
@@ -28,5 +29,15 @@ public class StowIntakeCompletely extends InstantCommand {
         m_intake.retractInner();
         m_intake.retractOuter();
         m_intake.end();
+    }
+
+    @Override
+    public void execute() {
+        initialize();
+    }
+
+    @Override
+    public boolean isFinished() {
+        return false;
     }
 }

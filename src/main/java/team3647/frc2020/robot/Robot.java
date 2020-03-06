@@ -109,6 +109,13 @@ public class Robot extends TimedRobot {
         lastMethod = LastMethod.kTesting;
     }
 
+    @Override
+    public void disabledPeriodic() {
+        if (LastMethod.kTeleop == lastMethod) {
+            m_robotContainer.onDisabled();
+        }
+    }
+
     /**
      * This function is called periodically during test mode.
      */

@@ -28,6 +28,7 @@ public class AimTurret extends CommandBase {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
+        m_turret.setAiming(true);
     }
 
     // Called every time the scheduler runs while the command is scheduled.
@@ -40,6 +41,7 @@ public class AimTurret extends CommandBase {
     @Override
     public void end(boolean interrupted) {
         m_turret.end();
+        m_turret.setAiming(false);
     }
 
     // Returns true when the command should end.
