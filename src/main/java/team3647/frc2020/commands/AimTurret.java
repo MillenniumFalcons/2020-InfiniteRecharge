@@ -7,6 +7,7 @@
 
 package team3647.frc2020.commands;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.subsystems.Turret;
@@ -15,13 +16,16 @@ public class AimTurret extends CommandBase {
 
     private final Turret m_turret;
     private final DoubleSupplier m_angleToTarget;
+    private final BooleanSupplier hasValidTarget;
+    private double turretPositionToGoTo = 0;
 
     /**
      * Creates a new AimTurret.
      */
-    public AimTurret(Turret turret, DoubleSupplier angleToTurret) {
+    public AimTurret(Turret turret, DoubleSupplier angleToTurret, BooleanSupplier hasValidTarget) {
         m_turret = turret;
         m_angleToTarget = angleToTurret;
+        this.hasValidTarget = hasValidTarget;
         addRequirements(m_turret);
     }
 
@@ -34,7 +38,10 @@ public class AimTurret extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_turret.setAngle(m_turret.getAngle() - m_angleToTarget.getAsDouble());
+        if(hasValidTarget.getAsBoolean()) {
+            turretPositionToGoTo = m_turret.getAngle() - m_angleToTarget.getAsDouble();
+        }
+        m_turret.setAngle(turretPositionToGoTo);
     }
 
     // Called once the command ends or is interrupted.
