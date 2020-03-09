@@ -17,6 +17,8 @@ import team3647.lib.wpi.Timer;
  */
 public class VictorSPXFactory {
 
+    private final static int kTimeoutms = 100;
+
     public static class Configuration {
         public final int CANID;
         public boolean inverted;
@@ -59,9 +61,10 @@ public class VictorSPXFactory {
         }
 
         public Configuration configOpenLoopRampRate(double secondsFromNeutralToFull) {
-            this.secondsFromNeutralToFull= secondsFromNeutralToFull;
+            this.secondsFromNeutralToFull = secondsFromNeutralToFull;
             return this;
         }
+
         public Configuration setPDPSlot(int slot) {
             this.pdpSlot = slot;
             return this;
@@ -76,16 +79,15 @@ public class VictorSPXFactory {
     }
 
     public static VictorSPX createVictor(Configuration config) {
-        Timer.delay(.25);
         VictorSPX victor = new VictorSPX(config.CANID);
-        victor.configFactoryDefault();
+        victor.configFactoryDefault(kTimeoutms);
         victor.setInverted(config.inverted);
 
-        handleCANError(config.CANID, victor.configPeakOutputForward(config.maxOutput),
+        handleCANError(config.CANID, victor.configPeakOutputForward(config.maxOutput, kTimeoutms),
                 "set max forward output");
-        handleCANError(config.CANID, victor.configPeakOutputReverse(config.minOutput),
+        handleCANError(config.CANID, victor.configPeakOutputReverse(config.minOutput, kTimeoutms),
                 "set max reverse output");
-        handleCANError(config.CANID, victor.configOpenloopRamp(config.secondsFromNeutralToFull),
+        handleCANError(config.CANID, victor.configOpenloopRamp(config.secondsFromNeutralToFull, kTimeoutms),
                 "config open loop ramp rate");
         return victor;
     }

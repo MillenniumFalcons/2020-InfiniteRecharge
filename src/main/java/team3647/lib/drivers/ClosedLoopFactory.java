@@ -20,6 +20,8 @@ import edu.wpi.first.wpilibj.DriverStation;
  * Config pid loops and feed forward for motors.
  */
 public class ClosedLoopFactory {
+    private final static int kTimeoutms = 100;
+
     public static class ClosedLoopConfig {
         public double kEncoderAccelerationToUnits;
         public double kEncoderVelocityToRPM;
@@ -166,17 +168,18 @@ public class ClosedLoopFactory {
     public static void configTalonPIDController(TalonSRX talon, FeedbackDevice feedbackDevice,
             ClosedLoopConfig config, int slot) {
         int id = talon.getDeviceID();
-        handleCANError(id, talon.configSelectedFeedbackSensor(feedbackDevice),
+        handleCANError(id, talon.configSelectedFeedbackSensor(feedbackDevice, 0, kTimeoutms),
                 "config feedback device");
-                
+
         int maxVelocityTicks = (int) (config.maxVelocity / config.kEncoderVelocityToRPM);
         int maxAccelerationTicks = (int) (config.maxVelocity / config.kEncoderAccelerationToUnits);
-        handleCANError(id, talon.config_kP(slot, config.kP), "set kP");
-        handleCANError(id, talon.config_kI(slot, config.kI), "set kI");
-        handleCANError(id, talon.config_kD(slot, config.kD), "set kD");
-        handleCANError(id, talon.configMotionAcceleration(maxAccelerationTicks),
+        handleCANError(id, talon.config_kP(slot, config.kP, kTimeoutms), "set kP");
+        handleCANError(id, talon.config_kI(slot, config.kI, kTimeoutms), "set kI");
+        handleCANError(id, talon.config_kD(slot, config.kD, kTimeoutms), "set kD");
+        handleCANError(id, talon.configMotionAcceleration(maxAccelerationTicks, kTimeoutms),
                 "set acceleration");
-        handleCANError(id, talon.configMotionCruiseVelocity(maxVelocityTicks), "set velocity");
+        handleCANError(id, talon.configMotionCruiseVelocity(maxVelocityTicks, kTimeoutms),
+                "set velocity");
         talon.setSensorPhase(config.sensorInverted);
     }
 }

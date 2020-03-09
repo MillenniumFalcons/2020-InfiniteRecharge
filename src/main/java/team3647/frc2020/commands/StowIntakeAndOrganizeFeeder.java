@@ -22,7 +22,7 @@ public class StowIntakeAndOrganizeFeeder extends SequentialCommandGroup {
      * Creates a new StowIntakeAndOrganizeFeeder.
      */
     public StowIntakeAndOrganizeFeeder(Intake intake, Indexer indexer, KickerWheel kickerWheel) {
-        super(new RunCommand(intake::end, intake).withTimeout(.1), new StowOuterPistons(intake).withTimeout(.3), new WaitCommand(2), 
-                new OrganizeFeeder(indexer, kickerWheel).withTimeout(3));
+        super(new RunCommand(intake::end, intake).withTimeout(.1), new StowOuterExtendInner(intake).withTimeout(.1), new WaitCommand(1), 
+                new OrganizeFeeder(indexer, kickerWheel).withTimeout(1));
     }
 }

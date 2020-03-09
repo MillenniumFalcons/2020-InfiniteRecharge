@@ -147,16 +147,15 @@ public class RobotContainer {
             boolean isTurretAiming = m_turret.isAiming();
 
             if (isTurretAiming) {
-                if(isTargetOutsideLimits) {
-                    if(m_LED.getRed() > .8) {
+                if (isTargetOutsideLimits) {
+                    if (m_LED.getRed() > .8) {
                         m_LED.set(0, 0, 0);
                     } else {
                         m_LED.set(1, 0, 0);
                     }
-                }
-                else if (hasValidTarget) {
+                } else if (hasValidTarget) {
                     if (isAimed) {
-                        if(m_LED.getGreen() > .8) {
+                        if (m_LED.getGreen() > .8) {
                             m_LED.set(0, 0, 0);
                         } else {
                             m_LED.set(0, 1, 0);
@@ -226,7 +225,9 @@ public class RobotContainer {
             m_intake.extendInner();
         }, m_indexer, m_intake, m_kickerWheel).withTimeout(.5));
 
-        mainController.buttonX.whenPressed(new DeployClimber(m_climber));
+        mainController.buttonX.whenPressed(new SequentialCommandGroup(
+                new TurretMotionMagic(m_turret, Constants.cTurret.leftDeg),
+                new DeployClimber(m_climber)));
 
         coController.rightBumper.whenActive(new AutoAimTurretHood(m_hood, m_turret,
                 this::getHoodPosition, m_visionController::getFilteredYaw));
@@ -255,8 +256,10 @@ public class RobotContainer {
                 new MoveHood(m_hood, Constants.cHood.rightUpToTowerShotPosition),
                 new BatterShot(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper)));
 
-        coController.buttonY.or(coController.buttonB).or(coController.rightTrigger).whenActive(new RunCommand(airCompressor::stop).withTimeout(.1));
-        coController.buttonY.or(coController.buttonB).or(coController.rightTrigger).whenInactive(new RunCommand(airCompressor::start).withTimeout(.1));
+        coController.buttonY.or(coController.buttonB).or(coController.rightTrigger)
+                .whenActive(new RunCommand(airCompressor::stop).withTimeout(.1));
+        coController.buttonY.or(coController.buttonB).or(coController.rightTrigger)
+                .whenInactive(new RunCommand(airCompressor::start).withTimeout(.1));
         // coController.rightTrigger.whenActive(
         // new TrenchShot(m_flywheel, m_kickerWheel, m_indexer)
         // );

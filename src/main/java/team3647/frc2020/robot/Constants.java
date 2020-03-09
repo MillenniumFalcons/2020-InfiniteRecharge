@@ -380,6 +380,10 @@ public class Constants {
                         new Rotation2d(0));
         public static final Translation2d initiationFrontOfTower = new Translation2d(
                 metersInitiationLineFromDriversStation, metersCenterOfTowerFromSide);
+        public static final Translation2d pointInFrontOfBallsInRendezvous =
+                new Translation2d(Units.inches_to_meters(389.9), Units.inches_to_meters(109.811));
+        public static final Pose2d getBallsFromRendezvousPosition = new Pose2d(
+                pointInFrontOfBallsInRendezvous, new Rotation2d(Units.degrees_to_radians(-67.5)));
     }
 
     public static class cClimber {

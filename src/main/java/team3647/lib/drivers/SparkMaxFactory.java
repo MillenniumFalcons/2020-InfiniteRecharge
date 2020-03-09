@@ -5,7 +5,6 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.wpilibj.DriverStation;
-import team3647.lib.wpi.Timer;
 
 /**
  * Creates CANTalon objects and configures all the parameters we care about to
@@ -13,7 +12,7 @@ import team3647.lib.wpi.Timer;
  * expected to be set by the application. (254)
  */
 public class SparkMaxFactory {
-
+    private static final int kCANTimeout = 100;
     public static class Configuration {
         public final int CANID;
         public final boolean inverted;
@@ -66,8 +65,8 @@ public class SparkMaxFactory {
     }
 
     public static CANSparkMax createSparkMax(Configuration config) {
-        Timer.delay(.25);
         CANSparkMax sparkmax = new CANSparkMax(config.CANID, MotorType.kBrushless);
+        handleCANError(config.CANID, sparkmax.setCANTimeout(kCANTimeout), "set timeout");
         handleCANError(config.CANID, sparkmax.restoreFactoryDefaults(), "restore factory defaults");
         handleCANError(config.CANID, sparkmax.clearFaults(), "clear faults");
 
@@ -91,8 +90,8 @@ public class SparkMaxFactory {
 
     public static CANSparkMax createSparkMaxFollower(CANSparkMax master, Configuration config,
             boolean isInvertedFromMaster) {
-        Timer.delay(.25);
         CANSparkMax follower = new CANSparkMax(config.CANID, MotorType.kBrushless);
+        handleCANError(config.CANID, follower.setCANTimeout(kCANTimeout), "set timeout");
         handleCANError(config.CANID, follower.restoreFactoryDefaults(), "restore factory defaults");
         handleCANError(config.CANID, follower.clearFaults(), "clear faults");
         if (config.voltageCompensation) {

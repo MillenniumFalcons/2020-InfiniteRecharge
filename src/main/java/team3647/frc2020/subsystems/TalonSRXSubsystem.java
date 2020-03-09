@@ -26,7 +26,7 @@ import team3647.lib.wpi.HALMethods;
  * Add your own bound checking!
  */
 public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
-
+    private static final int kTimeoutms = 100;
     private TalonSRX master;
     private ControlMode controlMode = ControlMode.Disabled;
     private SimpleMotorFeedforward feedForwad;
@@ -123,7 +123,7 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
      *                    not change
      */
     protected void setEncoderPosition(double newPosition) {
-        TalonSRXUtil.checkError(master.setSelectedSensorPosition((int) newPosition),
+        TalonSRXUtil.checkError(master.setSelectedSensorPosition((int) newPosition, 0, kTimeoutms),
                 "couldn't change encoder value on " + getName() + "'s' sparkmax");
     }
 

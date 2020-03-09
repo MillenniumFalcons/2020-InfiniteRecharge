@@ -14,7 +14,7 @@ import team3647.lib.wpi.Timer;
  */
 public class TalonSRXFactory {
 
-    private final static int kTimeoutMs = 100;
+    private final static int kTimeoutms = 100;
 
     public static class Configuration {
         public final int CANID;
@@ -109,28 +109,27 @@ public class TalonSRXFactory {
     }
 
     public static TalonSRX createTalon(Configuration config) {
-        Timer.delay(.25);
         TalonSRX talon = new TalonSRX(config.CANID);
         talon.set(ControlMode.PercentOutput, 0.0);
         talon.setInverted(config.inverted);
-        handleCANError(config.CANID, talon.configFactoryDefault(), "restore factory defaults");
-        talon.clearStickyFaults(kTimeoutMs);
+        handleCANError(config.CANID, talon.configFactoryDefault(kTimeoutms), "restore factory defaults");
+        talon.clearStickyFaults(kTimeoutms);
 
         talon.enableCurrentLimit(config.enableCurrentLimiting);
-        handleCANError(config.CANID, talon.configPeakCurrentLimit(config.peakCurrent), "set peak current");
-        handleCANError(config.CANID, talon.configPeakCurrentDuration(config.peakCurrentDuration),
+        handleCANError(config.CANID, talon.configPeakCurrentLimit(config.peakCurrent, kTimeoutms), "set peak current");
+        handleCANError(config.CANID, talon.configPeakCurrentDuration(config.peakCurrentDuration, kTimeoutms),
                 "set peak current duration");
-        handleCANError(config.CANID, talon.configContinuousCurrentLimit(config.continuousCurrent),
+        handleCANError(config.CANID, talon.configContinuousCurrentLimit(config.continuousCurrent, kTimeoutms),
                 "set continuous current");
 
         talon.enableVoltageCompensation(config.voltageCompensation);
-        handleCANError(config.CANID, talon.configVoltageCompSaturation(config.nominalVoltage), "set nominal voltage");
+        handleCANError(config.CANID, talon.configVoltageCompSaturation(config.nominalVoltage, kTimeoutms), "set nominal voltage");
 
-        handleCANError(config.CANID, talon.configPeakOutputForward(config.maxOutput), "set max forward output");
+        handleCANError(config.CANID, talon.configPeakOutputForward(config.maxOutput, kTimeoutms), "set max forward output");
 
-        handleCANError(config.CANID, talon.configPeakOutputReverse(config.minOutput), "set max reverse output");
+        handleCANError(config.CANID, talon.configPeakOutputReverse(config.minOutput, kTimeoutms), "set max reverse output");
 
-        handleCANError(config.CANID, talon.configOpenloopRamp(config.secondsFromNeutralToFull),
+        handleCANError(config.CANID, talon.configOpenloopRamp(config.secondsFromNeutralToFull, kTimeoutms),
                 "config open loop ramp rate");
         return talon;
     }
