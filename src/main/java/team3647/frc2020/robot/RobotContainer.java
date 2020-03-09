@@ -30,10 +30,12 @@ import team3647.frc2020.commands.AutoAimTurretHood;
 import team3647.frc2020.commands.BatterShot;
 import team3647.frc2020.commands.DeployClimber;
 import team3647.frc2020.commands.ExtendIntakeToGround;
+import team3647.frc2020.commands.FlywheelOpenloop;
 import team3647.frc2020.commands.GroundIntake;
 import team3647.frc2020.commands.GroundIntakeSequence;
 import team3647.frc2020.commands.IndexerManual;
 import team3647.frc2020.commands.InitiationLineShot;
+import team3647.frc2020.commands.KickerWheelOpenloop;
 import team3647.frc2020.commands.LoadBalls;
 import team3647.frc2020.commands.LoadingStationIntake;
 import team3647.frc2020.commands.MoveHood;
@@ -88,7 +90,8 @@ public class RobotContainer {
             Constants.cDrivetrain.rightSlaveConfig, Constants.cDrivetrain.leftMasterPIDConfig,
             Constants.cDrivetrain.rightMasterPIDConfig, Constants.cDrivetrain.shifterPin,
             Constants.cDrivetrain.kWheelDiameter, Constants.cDrivetrain.kS,
-            Constants.cDrivetrain.kV, Constants.cDrivetrain.kA, 16);
+            Constants.cDrivetrain.kV, Constants.cDrivetrain.kA, 16,
+            Constants.cDrivetrain.climbLimitPin);
 
     private final Flywheel m_flywheel = new Flywheel(Constants.cFlywheel.masterConfig,
             Constants.cFlywheel.slaveConfig, Constants.cFlywheel.pidConfig);
@@ -171,14 +174,12 @@ public class RobotContainer {
             }
         }, m_LED));
 
-
         m_printer.addDouble("tunnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
         m_printer.addDouble("funnel amps", () -> {
             return pdp.getCurrent(m_indexer.getTunnelPDPSlot());
         });
-
 
         m_printer.addDouble("shooter rpm based on distance", this::getFlywheelRPM);
         m_printer.addDouble("kicker wheel amps", m_kickerWheel::getMasterCurrent);
@@ -194,12 +195,12 @@ public class RobotContainer {
         // .whenActive(new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper));
 
         // coController.leftBumper.whenActive(new ParallelCommandGroup(
-        // new LoadingStationIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
+        // new LoadingStationIntake(m_intake), new LoadBalls(m_indexer,
+        // m_ballStopper)));
 
         coController.leftTrigger.whenPressed(new SequentialCommandGroup(
                 new RunCommand(m_intake::retractInner, m_intake).withTimeout(.5),
                 new ExtendIntakeToGround(m_intake).withTimeout(.25)));
-
 
         coController.leftTrigger.whenReleased(
                 new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel).withTimeout(3));
@@ -210,7 +211,6 @@ public class RobotContainer {
 
         coController.leftBumper.and(coController.leftTrigger).whenActive(new ParallelCommandGroup(
                 new GroundIntake(m_intake), new LoadBalls(m_indexer, m_ballStopper)));
-
 
         coController.leftBumper
                 .whenReleased(new ParallelCommandGroup(new RunCommand(m_intake::end, m_intake),
@@ -226,18 +226,34 @@ public class RobotContainer {
         }, m_indexer, m_intake, m_kickerWheel).withTimeout(.5));
 
         mainController.buttonX.whenPressed(new SequentialCommandGroup(
-                new TurretMotionMagic(m_turret, Constants.cTurret.leftDeg),
+                new ParallelCommandGroup(new TurretMotionMagic(m_turret, Constants.cTurret.leftDeg),
+                        new MoveHood(m_hood, 0.3).withTimeout(1)),
                 new DeployClimber(m_climber)));
+                
 
-        coController.rightBumper.whenActive(new AutoAimTurretHood(m_hood, m_turret,
-                this::getHoodPosition, m_visionController::getFilteredYaw));
+        coController.buttonX.whenActive(new ParallelCommandGroup(
+                new FlywheelOpenloop(m_flywheel, -1), new KickerWheelOpenloop(m_kickerWheel, -1)));
+
+        coController.rightBumper.whenActive(new ParallelCommandGroup(
+                new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+                        m_visionController::getFilteredYaw, m_visionController::isValid),
+                new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, this::getFlywheelRPM,
+                        m_visionController::isValid)));
+
+        coController.leftMidButton.whenActive(new InstantCommand(() -> {
+            m_visionController.setPipeline(Pipeline.CLOSE_FAR);
+        }));
+
+        coController.rightMidButton.whenActive(new InstantCommand(() -> {
+            m_visionController.setPipeline(Pipeline.CLOSE);
+        }));
 
         // coController.rightBumper
         // .whenActive(new AimTurret(m_turret, m_visionController::getFilteredYaw));
 
         coController.rightTrigger.whenActive(new ParallelCommandGroup(
                 new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                        m_visionController::getFilteredYaw),
+                        m_visionController::getFilteredYaw, m_visionController::isValid),
                 new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
                         this::getFlywheelRPM,
                         Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
@@ -270,6 +286,7 @@ public class RobotContainer {
         coController.buttonB.whenReleased(new StopShooting(m_flywheel, m_kickerWheel, m_indexer));
 
         coController.buttonY.whenReleased(new StopShooting(m_flywheel, m_kickerWheel, m_indexer));
+        coController.buttonX.whenReleased(new StopShooting(m_flywheel, m_kickerWheel, m_indexer));
 
         coController.dPadLeft
                 .whenPressed(new TurretMotionMagic(m_turret, Constants.cTurret.leftDeg));
@@ -312,32 +329,34 @@ public class RobotContainer {
                         new RamseteController(), Constants.cDrivetrain.kDriveKinematics,
                         m_drivetrain::setVelocityMpS, m_drivetrain);
 
-        Command sequence =
-                new SequentialCommandGroup(new TurretMotionMagic(m_turret, 20).withTimeout(.1),
+        Command sequence = new SequentialCommandGroup(
+                new TurretMotionMagic(m_turret, 30).withTimeout(.4),
+                new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
+                        m_visionController::getFilteredYaw, m_visionController::isValid)
+                                .withTimeout(.3),
+                new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
+                        this::getFlywheelRPM,
+                        Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+                        IndexerSignal.GO_FAST).withTimeout(3),
+                new StopShooting(m_flywheel, m_kickerWheel, m_indexer),
+                new ParallelDeadlineGroup(initiationLineToTrench,
+                        new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper)),
+                new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
+                new ParallelDeadlineGroup(
+                        trenchToCenterTower,
+                        new SequentialCommandGroup(
+                                new StowIntakeAndOrganizeFeeder(m_intake, m_indexer, m_kickerWheel)
+                                        .withTimeout(2),
+                                new LoadBalls(m_indexer, m_ballStopper)),
                         new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                                m_visionController::getFilteredYaw).withTimeout(.1),
-                        new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
-                                this::getFlywheelRPM,
-                                Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
-                                IndexerSignal.GO_FAST).withTimeout(3),
-                        new StopShooting(m_flywheel, m_kickerWheel, m_indexer),
-                        new ParallelDeadlineGroup(initiationLineToTrench,
-                                new GroundIntakeSequence(m_intake, m_indexer, m_ballStopper)),
-                        new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
-                        new ParallelDeadlineGroup(trenchToCenterTower,
-                                new SequentialCommandGroup(
-                                        new StowIntakeAndOrganizeFeeder(m_intake, m_indexer,
-                                                m_kickerWheel).withTimeout(2),
-                                        new LoadBalls(m_indexer, m_ballStopper)),
-                                new AutoAimTurretHood(m_hood, m_turret, this::getHoodPosition,
-                                        m_visionController::getFilteredYaw),
-                                new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, 4000)),
-                        new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
-                        new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
-                                this::getFlywheelRPM,
-                                Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
-                                IndexerSignal.GO_FAST).withTimeout(4),
-                        new StopShooting(m_flywheel, m_kickerWheel, m_indexer));
+                                m_visionController::getFilteredYaw, m_visionController::isValid),
+                        new AccelerateFlywheelKickerWheel(m_flywheel, m_kickerWheel, 4000, true)),
+                new RunCommand(this::stopDrivetrain, m_drivetrain).withTimeout(.1),
+                new ShootClosedLoop(m_flywheel, m_kickerWheel, m_indexer, m_ballStopper,
+                        this::getFlywheelRPM,
+                        Constants.cKickerWheel::getFlywheelOutputFromFlywheelRPM,
+                        IndexerSignal.GO_FAST).withTimeout(4),
+                new StopShooting(m_flywheel, m_kickerWheel, m_indexer));
         return sequence;
     }
 

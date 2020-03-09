@@ -7,6 +7,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
@@ -69,6 +70,7 @@ public class Drivetrain implements PeriodicSubsystem {
     private final PigeonIMU m_gyro;
 
     private final Solenoid shifter;
+    private final DigitalInput climberLimitSwitch;
 
     private boolean shifted;
 
@@ -76,7 +78,7 @@ public class Drivetrain implements PeriodicSubsystem {
             Configuration leftSlaveConfig, Configuration rightSlaveConfig,
             ClosedLoopConfig leftMasterPIDConfig, ClosedLoopConfig rightMasterPIDConfig,
             int shifterPin, double kWheelDiameterMeters, double kS, double kV, double kA,
-            int gyroCANID) {
+            int gyroCANID, int climbLimitSwitch) {
         if (constructCount > 0) {
             throw new UnsupportedOperationException("Drivetrain was already initialized once");
         }
@@ -107,6 +109,7 @@ public class Drivetrain implements PeriodicSubsystem {
         feedforward = new SimpleMotorFeedforward(kS, kV, kA);
         m_gyro = new PigeonIMU(gyroCANID);
         shifter = new Solenoid(shifterPin);
+        climberLimitSwitch = new DigitalInput(climbLimitSwitch);
         constructCount++;
         shifted = false;
     }
@@ -118,6 +121,7 @@ public class Drivetrain implements PeriodicSubsystem {
         /** Meters per second */
         public double rightVelocity;
 
+        public boolean climbLimitSwitch;
         public double ypr[] = new double[] {0, 0, 0};
 
         /** Meters */
@@ -193,6 +197,7 @@ public class Drivetrain implements PeriodicSubsystem {
 
         m_gyro.getYawPitchRoll(periodicIO.ypr);
         periodicIO.heading = -Math.IEEEremainder(periodicIO.ypr[0], 360);
+        periodicIO.climbLimitSwitch = !climberLimitSwitch.get();
     }
 
     private void reconstructLeftEncoder() {
@@ -577,6 +582,10 @@ public class Drivetrain implements PeriodicSubsystem {
 
     public boolean hasInitialized() {
         return initialized;
+    }
+
+    public boolean getClimbLimitSwitch() {
+        return periodicIO.climbLimitSwitch;
     }
 
     public DifferentialDriveWheelSpeeds getWheelSpeeds() {

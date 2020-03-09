@@ -29,6 +29,8 @@ public class Constants {
         public static final int stallCurrent = 35;
         public static final int maxCurrent = 60;
 
+        public static final int climbLimitPin = 0;
+
         // pcm pin
         public static final int shifterPin = 2;
 
@@ -328,18 +330,18 @@ public class Constants {
 
     public static class cHood {
         public static int pwmPort = 2;
-        public static double minPosition = .2;
+        public static double minPosition = .3;
         public static double maxPosition = .9;
         public static double trenchShotPosition = .645;
         public static double cpShotPosition = .66;
-        public static double rightUpToTowerShotPosition = .2;
+        public static double rightUpToTowerShotPosition = .25;
 
         public static double[][] kHoodDistancePosition =
                 {{Units.feet_to_meters(4), .31}, {Units.feet_to_meters(6), .43},
-                        {Units.feet_to_meters(8), .53}, {Units.feet_to_meters(10), .56},
-                        {Units.feet_to_meters(12), .59}, {Units.feet_to_meters(14), .615},
-                        {Units.feet_to_meters(16), .62}, {Units.feet_to_meters(18), .63},
-                        {Units.feet_to_meters(20), .64}, {Units.meters_to_feet(22), .645}};
+                        {Units.feet_to_meters(8), .52}, {Units.feet_to_meters(10), .55},
+                        {Units.feet_to_meters(12), .575}, {Units.feet_to_meters(14), .60},
+                        {Units.feet_to_meters(16), .605}, {Units.feet_to_meters(18), .62},
+                        {Units.feet_to_meters(20), .63}, {Units.meters_to_feet(22), .635}};
 
         public static InterpolatingTreeMap<InterpolatingDouble, InterpolatingDouble> kHoodAutoAimMap =
                 new InterpolatingTreeMap<>();

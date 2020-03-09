@@ -23,6 +23,8 @@ public class ArcadeDrive extends CommandBase {
     private final BooleanSupplier m_scaleInputs;
     private final BooleanSupplier shouldShift;
 
+    private boolean limitSwitchOnceWhileShifted;
+
     /**
      * Creates a new ArcadeDrive.
      */
@@ -70,8 +72,17 @@ public class ArcadeDrive extends CommandBase {
         // m_drivetrain.arcadeDrive(m_throttle.getAsDouble() * .6, m_turn.getAsDouble() * .6,
         // m_scaleInputs.getAsBoolean());
         if (m_drivetrain.isShifted()) {
+            if(m_drivetrain.getClimbLimitSwitch()) {
+                limitSwitchOnceWhileShifted = true;
+            }
+            System.out.println("climb limit switch: " + limitSwitchOnceWhileShifted);
+            if(limitSwitchOnceWhileShifted) {
+                throttle = throttle < 0 ? 0 : throttle;
+            }
             throttle *= .5;
             turn = 0;
+        } else {
+            limitSwitchOnceWhileShifted = false;
         }
         m_drivetrain.curvatureDrive(throttle, turn, throttle < .15);
 

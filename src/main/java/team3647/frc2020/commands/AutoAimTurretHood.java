@@ -7,6 +7,7 @@
 
 package team3647.frc2020.commands;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import team3647.frc2020.subsystems.Turret;
@@ -21,8 +22,8 @@ public class AutoAimTurretHood extends ParallelCommandGroup {
      * Creates a new AutoAimAccelerateFlywheel.
      */
     public AutoAimTurretHood(Hood hood, Turret turret, DoubleSupplier hoodPosition,
-            DoubleSupplier angleToTurret) {
-        super(new AimTurret(turret, angleToTurret), new MoveHood(hood, hoodPosition));
+            DoubleSupplier angleToTurret, BooleanSupplier hasValidTarget) {
+        super(new AimTurret(turret, angleToTurret, hasValidTarget), new MoveHood(hood, hoodPosition));
         // Add your commands in the super() call, e.g.
         // super(new FooCommand(), new BarCommand());super();
     }

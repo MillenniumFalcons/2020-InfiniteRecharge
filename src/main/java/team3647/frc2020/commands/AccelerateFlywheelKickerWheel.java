@@ -7,6 +7,7 @@
 
 package team3647.frc2020.commands;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.robot.Constants;
@@ -17,14 +18,17 @@ public class AccelerateFlywheelKickerWheel extends CommandBase {
     private final Flywheel m_flywheel;
     private final KickerWheel m_kickerWheel;
     private final DoubleSupplier flywheelRPM;
+    private final BooleanSupplier hasValidTarget;
 
     /**
      * Creates a new AccelerateFlywheel.
      */
-    public AccelerateFlywheelKickerWheel(Flywheel flywheel, KickerWheel kickerWheel, DoubleSupplier flywheelRPM) {
+    public AccelerateFlywheelKickerWheel(Flywheel flywheel, KickerWheel kickerWheel, DoubleSupplier flywheelRPM,
+            BooleanSupplier hasValidTarget) {
         m_flywheel = flywheel;
         m_kickerWheel = kickerWheel;
         this.flywheelRPM = flywheelRPM;
+        this.hasValidTarget = hasValidTarget;
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(m_flywheel, m_kickerWheel);
     }
@@ -32,11 +36,15 @@ public class AccelerateFlywheelKickerWheel extends CommandBase {
     /**
      * Creates a new AccelerateFlywheel.
      */
-    public AccelerateFlywheelKickerWheel(Flywheel flywheel, KickerWheel kickerWheel, double flywheelRPM) {
+    public AccelerateFlywheelKickerWheel(Flywheel flywheel, KickerWheel kickerWheel, double flywheelRPM,
+            boolean hasValidTarget) {
         m_flywheel = flywheel;
         m_kickerWheel = kickerWheel;
         this.flywheelRPM = () -> {
             return flywheelRPM;
+        };
+        this.hasValidTarget = () -> {
+            return hasValidTarget;
         };
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(m_flywheel, m_kickerWheel);
@@ -50,8 +58,10 @@ public class AccelerateFlywheelKickerWheel extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_flywheel.setRPM(flywheelRPM.getAsDouble());
-        m_kickerWheel.setOpenloop(Constants.cKickerWheel.getFlywheelOutputFromFlywheelRPM(flywheelRPM.getAsDouble()));
+        if (hasValidTarget.getAsBoolean()) {
+            m_flywheel.setRPM(flywheelRPM.getAsDouble());
+            m_kickerWheel.setOpenloop(.5);
+        }
     }
 
     // Called once the command ends or is interrupted.

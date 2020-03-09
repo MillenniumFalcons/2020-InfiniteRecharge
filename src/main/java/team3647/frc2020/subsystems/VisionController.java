@@ -61,7 +61,7 @@ public class VisionController implements PeriodicSubsystem {
     private RollingAverage rangeAverage = new RollingAverage();
 
     public enum Pipeline {
-        FAR(0), CLOSE(1);
+        FAR(0), CLOSE(1), CLOSE_FAR(2);
 
         public final int id;
 
