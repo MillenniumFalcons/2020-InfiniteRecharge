@@ -5,12 +5,11 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.DriverStation;
-import team3647.lib.wpi.Timer;
 
 /**
- * Creates CANTalon objects and configures all the parameters we care about to
- * factory defaults. Closed-loop and sensor parameters are not set, as these are
- * expected to be set by the application. (254)
+ * Creates CANTalon objects and configures all the parameters we care about to factory defaults.
+ * Closed-loop and sensor parameters are not set, as these are expected to be set by the
+ * application. (254)
  */
 public class TalonSRXFactory {
 
@@ -37,8 +36,8 @@ public class TalonSRXFactory {
             this.inverted = inverted;
         }
 
-        public Configuration currentLimiting(boolean enable, int peakCurrent, int peakCurrentDuration,
-                int continuousCurrent) {
+        public Configuration currentLimiting(boolean enable, int peakCurrent,
+                int peakCurrentDuration, int continuousCurrent) {
             enableCurrentLimiting = enable;
             this.peakCurrent = peakCurrent;
             this.peakCurrentDuration = peakCurrentDuration;
@@ -85,8 +84,8 @@ public class TalonSRXFactory {
         public static Configuration mirrorWithCANID(Configuration config, int CANID) {
 
             return new Configuration(CANID, config.inverted)
-                    .currentLimiting(config.enableCurrentLimiting, config.peakCurrent, config.peakCurrentDuration,
-                            config.continuousCurrent)
+                    .currentLimiting(config.enableCurrentLimiting, config.peakCurrent,
+                            config.peakCurrentDuration, config.continuousCurrent)
                     .voltageCompensation(config.voltageCompensation, config.nominalVoltage)
                     .neutralMode(config.neutralMode).configMaxOutput(config.maxOutput)
                     .configMaxReverseOutput(config.minOutput);
@@ -98,8 +97,8 @@ public class TalonSRXFactory {
 
     private static void handleCANError(int id, ErrorCode error, String message) {
         if (error != ErrorCode.OK) {
-            DriverStation.reportError(
-                    "Could not configure talon id: " + id + " error: " + error.toString() + " " + message, false);
+            DriverStation.reportError("Could not configure talon id: " + id + " error: "
+                    + error.toString() + " " + message, false);
         }
     }
 
@@ -112,24 +111,33 @@ public class TalonSRXFactory {
         TalonSRX talon = new TalonSRX(config.CANID);
         talon.set(ControlMode.PercentOutput, 0.0);
         talon.setInverted(config.inverted);
-        handleCANError(config.CANID, talon.configFactoryDefault(kTimeoutms), "restore factory defaults");
+        handleCANError(config.CANID, talon.configFactoryDefault(kTimeoutms),
+                "restore factory defaults");
         talon.clearStickyFaults(kTimeoutms);
 
         talon.enableCurrentLimit(config.enableCurrentLimiting);
-        handleCANError(config.CANID, talon.configPeakCurrentLimit(config.peakCurrent, kTimeoutms), "set peak current");
-        handleCANError(config.CANID, talon.configPeakCurrentDuration(config.peakCurrentDuration, kTimeoutms),
+        handleCANError(config.CANID, talon.configPeakCurrentLimit(config.peakCurrent, kTimeoutms),
+                "set peak current");
+        handleCANError(config.CANID,
+                talon.configPeakCurrentDuration(config.peakCurrentDuration, kTimeoutms),
                 "set peak current duration");
-        handleCANError(config.CANID, talon.configContinuousCurrentLimit(config.continuousCurrent, kTimeoutms),
+        handleCANError(config.CANID,
+                talon.configContinuousCurrentLimit(config.continuousCurrent, kTimeoutms),
                 "set continuous current");
 
         talon.enableVoltageCompensation(config.voltageCompensation);
-        handleCANError(config.CANID, talon.configVoltageCompSaturation(config.nominalVoltage, kTimeoutms), "set nominal voltage");
+        handleCANError(config.CANID,
+                talon.configVoltageCompSaturation(config.nominalVoltage, kTimeoutms),
+                "set nominal voltage");
 
-        handleCANError(config.CANID, talon.configPeakOutputForward(config.maxOutput, kTimeoutms), "set max forward output");
+        handleCANError(config.CANID, talon.configPeakOutputForward(config.maxOutput, kTimeoutms),
+                "set max forward output");
 
-        handleCANError(config.CANID, talon.configPeakOutputReverse(config.minOutput, kTimeoutms), "set max reverse output");
+        handleCANError(config.CANID, talon.configPeakOutputReverse(config.minOutput, kTimeoutms),
+                "set max reverse output");
 
-        handleCANError(config.CANID, talon.configOpenloopRamp(config.secondsFromNeutralToFull, kTimeoutms),
+        handleCANError(config.CANID,
+                talon.configOpenloopRamp(config.secondsFromNeutralToFull, kTimeoutms),
                 "config open loop ramp rate");
         return talon;
     }

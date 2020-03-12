@@ -101,6 +101,7 @@ public abstract class TalonSRXSubsystem implements PeriodicSubsystem {
 
     @Override
     public void writePeriodicOutputs() {
+        System.out.println("demand: " + periodicIO.demand);
         master.set(controlMode, periodicIO.demand, DemandType.ArbitraryFeedForward, periodicIO.feedforward / 12.0);
     }
 

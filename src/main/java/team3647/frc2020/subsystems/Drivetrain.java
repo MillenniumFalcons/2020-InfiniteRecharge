@@ -1,17 +1,19 @@
 package team3647.frc2020.subsystems;
 
+import java.util.List;
 import com.ctre.phoenix.sensors.PigeonIMU;
 import com.revrobotics.CANEncoder;
 import com.revrobotics.CANPIDController;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
-
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.wpilibj.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpiutil.math.MathUtil;
@@ -21,6 +23,7 @@ import team3647.lib.drivers.SparkMaxFactory;
 import team3647.lib.drivers.SparkMaxUtil;
 import team3647.lib.drivers.ClosedLoopFactory.ClosedLoopConfig;
 import team3647.lib.drivers.SparkMaxFactory.Configuration;
+import team3647.lib.util.Units;
 import team3647.lib.wpi.HALMethods;
 import team3647.lib.wpi.Solenoid;
 import team3647.lib.wpi.Timer;
@@ -31,7 +34,6 @@ import team3647.lib.wpi.Timer;
 public class Drivetrain implements PeriodicSubsystem {
 
     private static int constructCount = 0;
-    private static final double kDt = .02;
     private CANSparkMax leftMaster;
     private CANSparkMax rightMaster;
     private CANSparkMax leftSlave;
@@ -74,6 +76,9 @@ public class Drivetrain implements PeriodicSubsystem {
 
     private boolean shifted;
 
+    private NetworkTable falconDashboardTab =
+            NetworkTableInstance.getDefault().getTable("Live_Dashboard");
+
     public Drivetrain(Configuration leftMasterConfig, Configuration rightMasterConfig,
             Configuration leftSlaveConfig, Configuration rightSlaveConfig,
             ClosedLoopConfig leftMasterPIDConfig, ClosedLoopConfig rightMasterPIDConfig,
@@ -112,6 +117,7 @@ public class Drivetrain implements PeriodicSubsystem {
         climberLimitSwitch = new DigitalInput(climbLimitSwitch);
         constructCount++;
         shifted = false;
+        setToBrake();
     }
 
     public static class PeriodicIO {
@@ -152,6 +158,11 @@ public class Drivetrain implements PeriodicSubsystem {
         resetEncoders();
         zeroHeading();
         m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
+        // falconDashboardTab.getEntry("visionTargets")
+        //         .setValue(List.of(new Pose2d(
+        //                 new Translation2d(Units.meters_to_feet(Units.inches_to_meters(94.49)),
+        //                         Units.meters_to_feet(Units.inches_to_meters(94.49))),
+        //                 new Rotation2d(0))));
         initialized = true;
     }
 
@@ -261,6 +272,12 @@ public class Drivetrain implements PeriodicSubsystem {
         m_timeStamp = Timer.getFPGATimestamp();
         m_odometry.update(Rotation2d.fromDegrees(getHeading()), periodicIO.leftPosition,
                 periodicIO.rightPosition);
+        falconDashboardTab.getEntry("robotX").setNumber(
+                Units.meters_to_feet(m_odometry.getPoseMeters().getTranslation().getX()));
+        falconDashboardTab.getEntry("robotY").setNumber(
+                Units.meters_to_feet(m_odometry.getPoseMeters().getTranslation().getY()));
+        falconDashboardTab.getEntry("robotHeading")
+                .setNumber(Units.degrees_to_radians(getHeading()));
 
     }
 

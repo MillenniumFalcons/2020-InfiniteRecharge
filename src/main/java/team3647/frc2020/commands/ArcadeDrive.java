@@ -12,7 +12,6 @@ import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.subsystems.Drivetrain;
-import team3647.lib.DriveSignal;
 import team3647.lib.wpi.HALMethods;
 
 public class ArcadeDrive extends CommandBase {
@@ -72,11 +71,11 @@ public class ArcadeDrive extends CommandBase {
         // m_drivetrain.arcadeDrive(m_throttle.getAsDouble() * .6, m_turn.getAsDouble() * .6,
         // m_scaleInputs.getAsBoolean());
         if (m_drivetrain.isShifted()) {
-            if(m_drivetrain.getClimbLimitSwitch()) {
+            if (m_drivetrain.getClimbLimitSwitch()) {
                 limitSwitchOnceWhileShifted = true;
             }
             System.out.println("climb limit switch: " + limitSwitchOnceWhileShifted);
-            if(limitSwitchOnceWhileShifted) {
+            if (limitSwitchOnceWhileShifted) {
                 throttle = throttle < 0 ? 0 : throttle;
             }
             throttle *= .5;

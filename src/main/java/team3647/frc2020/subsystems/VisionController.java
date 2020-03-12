@@ -11,7 +11,6 @@ import java.util.Objects;
 import team3647.frc2020.inputs.Limelight;
 import team3647.frc2020.inputs.Limelight.Data;
 import team3647.lib.util.RollingAverage;
-import team3647.lib.util.VisionTarget;
 import team3647.lib.wpi.HALMethods;
 
 /**

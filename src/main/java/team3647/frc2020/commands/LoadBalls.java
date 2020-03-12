@@ -3,7 +3,6 @@ package team3647.frc2020.commands;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import team3647.frc2020.subsystems.BallStopper;
 import team3647.frc2020.subsystems.Indexer;
-import team3647.frc2020.subsystems.KickerWheel;
 import team3647.lib.IndexerSignal;
 
 public class LoadBalls extends CommandBase {

@@ -1,8 +1,8 @@
 /*----------------------------------------------------------------------------*/
-/* Copyright (c) 2019 FIRST. All Rights Reserved.                             */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* Copyright (c) 2019 FIRST. All Rights Reserved. */
+/* Open Source Software - may be modified and shared by FRC teams. The code */
 /* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
+/* the project. */
 /*----------------------------------------------------------------------------*/
 
 package team3647.frc2020.commands;
@@ -15,6 +15,7 @@ public class TurretMotionMagic extends CommandBase {
     private final Turret m_turret;
     private final double kAngle;
     private final Timer timer;
+    private boolean keepPosition = false;
 
     /**
      * Creates a new TurretGoTo.
@@ -24,7 +25,14 @@ public class TurretMotionMagic extends CommandBase {
         m_turret = turret;
         kAngle = angle;
         timer = new Timer();
+        keepPosition = false;
         addRequirements(m_turret);
+    }
+
+
+    public TurretMotionMagic keepPosition() {
+        keepPosition = true;
+        return this;
     }
 
     // Called when the command is initially scheduled.
@@ -43,12 +51,16 @@ public class TurretMotionMagic extends CommandBase {
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        m_turret.end();
+        if (!keepPosition) {
+            m_turret.end();
+        } else {
+            m_turret.setAngle(kAngle);
+        }
     }
 
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return m_turret.reachedTargetPosition() || timer.get() > .5;
+        return (m_turret.reachedTargetPosition() || timer.get() > .5);
     }
 }

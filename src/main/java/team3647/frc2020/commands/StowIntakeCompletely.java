@@ -8,7 +8,6 @@
 package team3647.frc2020.commands;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import team3647.frc2020.subsystems.Intake;
 
 // NOTE:  Consider using this command inline, rather than writing a subclass.  For more

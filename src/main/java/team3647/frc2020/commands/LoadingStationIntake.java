@@ -26,6 +26,7 @@ public class LoadingStationIntake extends CommandBase {
     @Override
     public void initialize() {
         m_intake.extendInner();
+        m_intake.retractOuter();
     }
 
     // Called once the command ends or is interrupted.

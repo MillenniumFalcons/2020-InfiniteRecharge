@@ -10,7 +10,6 @@ package team3647.frc2020.commands;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import team3647.frc2020.robot.Constants;
 import team3647.frc2020.subsystems.Flywheel;
 import team3647.frc2020.subsystems.KickerWheel;
 
